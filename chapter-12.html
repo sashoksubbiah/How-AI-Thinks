@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 12: Image Recognition and ResNet — How AI Thinks</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav class="site-nav">
+  <div class="nav-brand">How <em>AI</em> Thinks</div>
+  <div class="nav-progress-track"><div class="nav-progress-fill"></div></div>
+  <div class="nav-links">
+    <a href="chapter-11.html">← Prev</a>
+    <a href="index.html">Contents</a>
+    <a href="chapter-13.html">Next →</a>
+  </div>
+</nav>
+
+<article class="chapter-page prose">
+  <header class="chapter-header reveal">
+    <div class="chapter-label">Chapter 12</div>
+    <h1 class="chapter-title">Image Recognition and ResNet</h1>
+    <p class="chapter-subtitle">How the 2012 ImageNet competition changed everything — and the ingenious "skip connection" trick that made very deep networks possible.</p>
+  </header>
+
+  <h2 class="reveal">The ImageNet Wake-Up Call (2012)</h2>
+
+  <p class="reveal">In 2009, Stanford professor Fei-Fei Li and her team released <strong>ImageNet</strong>: 3.2 million labeled images across thousands of categories (sea otters, barber chairs, parking meters...). They ran annual competitions: given 100,000 unlabeled photos, classify them correctly.</p>
+
+  <p class="reveal">In 2012, a team of three — Alex Krizhevsky, Ilya Sutskever, and Geoffrey Hinton (who later won the 2024 Nobel Prize) — entered a deep neural network called <strong>AlexNet</strong>. The results were staggering:</p>
+
+  <div class="demo reveal">
+    <table class="data-table">
+      <thead><tr><th>Team</th><th>Error Rate</th></tr></thead>
+      <tbody>
+        <tr><td style="color:var(--mint)">AlexNet (SuperVision)</td><td style="color:var(--mint)">15.3%</td></tr>
+        <tr><td>Second place</td><td>26.2%</td></tr>
+        <tr><td>Third place</td><td>27.0%</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:0.82rem; color:var(--text-3);">AlexNet didn't just win — it obliterated the competition by nearly 11 percentage points. This was the moment the AI world realised that deep neural networks + GPUs could blow away all other approaches.</p>
+  </div>
+
+  <h2 class="reveal">The Problem with Going Deeper</h2>
+
+  <p class="reveal">After AlexNet, researchers knew deeper = better. More layers means more ability to detect patterns and build understanding. But by 2015, they hit a wall: adding layers beyond a certain point made things <strong>worse</strong>, not better.</p>
+
+  <p class="reveal">The Microsoft Research team (Kaiming He and colleagues) realised this was a <strong>training</strong> problem, not a fundamental limit. Their reasoning: if 20 layers achieves a certain loss, then 21 layers should achieve at least the same loss — the 21st layer could just copy its input unchanged. That training couldn't find this solution meant something was broken in how gradients flowed through many layers.</p>
+
+  <h2 class="reveal">The Skip Connection</h2>
+
+  <p class="reveal">Their ingenious fix: <strong>skip connections</strong> (also called <strong>residual connections</strong>). Instead of just passing data through a layer, also add the original input back to the output:</p>
+
+  <div class="flow reveal" style="flex-direction:column; gap:0.4rem; align-items:stretch; max-width:400px; margin:1.5rem auto;">
+    <div class="flow-box" style="background:var(--mint-dim); border:1px solid rgba(52,211,153,.3); color:var(--mint); width:100%;">Input: [1.0, 2.0]</div>
+    <div style="display:flex; align-items:center; gap:0.5rem; justify-content:center;">
+      <span style="color:var(--text-4);">↓</span>
+      <span style="font-family:var(--font-mono); font-size:0.7rem; color:var(--text-4);">+ skip connection →</span>
+    </div>
+    <div class="flow-box" style="background:var(--indigo-dim); border:1px solid rgba(129,140,248,.3); color:var(--indigo); width:100%;">Linear → ReLU → Linear: output [0.1, 0.1]</div>
+    <div style="text-align:center; color:var(--text-4);">↓ ADD: [1.0+0.1, 2.0+0.1]</div>
+    <div class="flow-box" style="background:var(--amber-dim); border:1px solid rgba(251,191,36,.3); color:var(--amber); width:100%;">Result: [1.1, 2.1]</div>
+  </div>
+
+  <p class="reveal">The output is input + whatever the layer learned to add. If the layer hasn't learned anything useful yet (random small weights), the output ≈ input — the layer defaults to "do nothing." This means adding more layers can never hurt — they start as identity operations and learn to contribute only when they can improve the prediction.</p>
+
+  <div class="analogy reveal">
+    <div class="analogy-icon">🏗️</div>
+    <p><strong>Skip connections are like express lifts.</strong> Instead of forcing all information through every floor (layer), some information can skip ahead directly. This prevents the "vanishing gradient" problem where signals get lost as they pass through too many layers.</p>
+  </div>
+
+  <h2 class="reveal">Why This Matters for Transformers</h2>
+
+  <p class="reveal">Skip connections are used <strong>everywhere</strong> in the transformer. Every transformer block has two skip connections — one around the attention layer and one around the MLP. Without them, training a 20-layer or 32-layer transformer would be impossible. They add <strong>zero extra parameters</strong> and negligible computation, yet they're one of the most important techniques in all of deep learning.</p>
+
+  <div class="card mint reveal">
+    <div class="card-label">Inside Every Transformer Block</div>
+    <p style="font-family:var(--font-mono); font-size:0.9rem; color:var(--text-1);">
+      output₁ = input + Attention(Norm(input))<br>
+      output₂ = output₁ + MLP(Norm(output₁))
+    </p>
+    <p style="margin-top:0.5rem;">Two skip connections per block. The + signs are the skip connections — simple element-wise addition of the input back to the layer's output.</p>
+  </div>
+
+  <div class="takeaway reveal">
+    <div class="takeaway-label">Key Insight</div>
+    <p><strong>Skip connections make deep networks trainable.</strong> By adding the input back to each layer's output, layers default to "do nothing" and only learn to contribute when they can help. This simple addition — requiring zero extra parameters — enabled networks with dozens or hundreds of layers. Every transformer model you use today depends on skip connections in every block.</p>
+  </div>
+
+  <nav class="chapter-footer-nav reveal">
+    <a href="chapter-11.html" class="prev">
+      <span class="dir">← Previous</span>
+      <span class="title">Cracking Open the Transformer</span>
+    </a>
+    <a href="chapter-13.html" class="next">
+      <span class="dir">Next Chapter →</span>
+      <span class="title">Transformer Block</span>
+    </a>
+  </nav>
+</article>
+
+<script src="script.js"></script>
+</body>
+</html>

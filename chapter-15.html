@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 15: Rotary Embeddings — How AI Thinks</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav class="site-nav">
+  <div class="nav-brand">How <em>AI</em> Thinks</div>
+  <div class="nav-progress-track"><div class="nav-progress-fill"></div></div>
+  <div class="nav-links">
+    <a href="chapter-14.html">← Prev</a>
+    <a href="index.html">Contents</a>
+    <a href="chapter-16.html">Next →</a>
+  </div>
+</nav>
+
+<article class="chapter-page prose">
+  <header class="chapter-header reveal">
+    <div class="chapter-label">Chapter 15</div>
+    <h1 class="chapter-title">Rotary Embeddings</h1>
+    <p class="chapter-subtitle">How the model knows that "France" in position 4 is different from "France" in position 98 — by rotating vectors based on their position.</p>
+  </header>
+
+  <h2 class="reveal">Why Position Matters</h2>
+
+  <p class="reveal">Word order is critical to meaning. Consider these Tamil sentences with the same words but different meanings:</p>
+
+  <div class="card amber reveal">
+    <div class="card-label">Tamil Word Order Example</div>
+    <p><span class="tamil" style="font-size:1.1rem;">நான் உன்னை நேசிக்கிறேன்</span> = "I love you" (Subject-Object-Verb)</p>
+    <p style="margin-top:0.5rem;"><span class="tamil" style="font-size:1.1rem;">நீ என்னை நேசிக்கிறாய்</span> = "You love me" (completely different meaning!)</p>
+    <p style="font-size:0.85rem; color:var(--text-3); margin-top:0.5rem;">The words change form based on who is subject vs object, but position also matters. In English it's even more stark: "Dog bites man" ≠ "Man bites dog" — same words, different order, completely different meaning.</p>
+  </div>
+
+  <p class="reveal">But in the attention mechanism from Chapter 14, a "France" token in position 4 generates the <strong>exact same</strong> Key and Query as a "France" in position 98 — they go through the same linear transform with the same weights. The model has no way to know where in the sequence a token sits.</p>
+
+  <h2 class="reveal">The Solution: Rotate the Vectors</h2>
+
+  <p class="reveal"><strong>Rotary Position Embeddings (RoPE)</strong>, invented by researchers in Shenzhen, China in 2023, solve this elegantly. After computing the Q and K vectors, but <strong>before</strong> comparing them, we <strong>rotate</strong> each vector by an angle that depends on its position.</p>
+
+  <div class="analogy reveal">
+    <div class="analogy-icon">🕐</div>
+    <p><strong>Clock analogy:</strong> Imagine each Q and K vector as a clock hand. Position 1 rotates it a tiny bit. Position 2 rotates it twice as much. Position 100 rotates it 100 times as much. Now even if two tokens have identical embeddings (like "buffalo buffalo buffalo..."), their rotated Q and K vectors will be different, and the attention mechanism can learn position-dependent patterns.</p>
+  </div>
+
+  <h3 class="reveal">Key Properties of RoPE</h3>
+
+  <div class="card-grid reveal">
+    <div class="grid-card" style="border-color:rgba(52,211,153,.3);">
+      <div class="gc-icon">🔄</div>
+      <h4>Relative Position</h4>
+      <p>The dot product between two rotated vectors depends on the <em>distance</em> between their positions, not their absolute positions. Token 5 attending to token 3 works the same way as token 105 attending to token 103.</p>
+    </div>
+    <div class="grid-card" style="border-color:rgba(129,140,248,.3);">
+      <div class="gc-icon">📏</div>
+      <h4>Nearby = Similar</h4>
+      <p>Tokens close together have similar rotations, so their Q-K dot products are naturally higher. Distant tokens have very different rotations. The model can learn to exploit this.</p>
+    </div>
+    <div class="grid-card" style="border-color:rgba(251,191,36,.3);">
+      <div class="gc-icon">0️⃣</div>
+      <h4>Zero Parameters</h4>
+      <p>RoPE involves no learned parameters! The rotation angles are computed from a fixed formula based on position and dimension. Sophisticated yet free.</p>
+    </div>
+    <div class="grid-card" style="border-color:rgba(251,113,133,.3);">
+      <div class="gc-icon">♾️</div>
+      <h4>Any Length</h4>
+      <p>Works for sequences of any length — no need to pre-define a maximum. The rotation formula extends naturally to any position number.</p>
+    </div>
+  </div>
+
+  <h3 class="reveal">Where RoPE Fits in the Architecture</h3>
+
+  <p class="reveal">RoPE is applied after the Q and K linear transforms but before the dot-product attention score computation. It does <strong>not</strong> touch the Values — position information only affects which positions attend to each other, not the information that flows between them.</p>
+
+  <div class="flow reveal">
+    <div class="flow-box" style="background:var(--indigo-dim); border:1px solid rgba(129,140,248,.3); color:var(--indigo); font-size:0.8rem;">Q linear</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box" style="background:var(--amber-dim); border:1px solid rgba(251,191,36,.3); color:var(--amber); font-size:0.8rem;">RoPE rotation</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box" style="background:var(--cyan-dim); border:1px solid rgba(34,211,238,.3); color:var(--cyan); font-size:0.8rem;">Q · K → scores</div>
+  </div>
+
+  <div class="takeaway reveal">
+    <div class="takeaway-label">Key Insight</div>
+    <p><strong>Rotary embeddings inject position information into the attention mechanism</strong> by rotating Query and Key vectors based on their position in the sequence. This lets the model learn that nearby words are more likely to be relevant, that word order matters, and that the same word in different positions can have different roles. All with zero learned parameters.</p>
+  </div>
+
+  <nav class="chapter-footer-nav reveal">
+    <a href="chapter-14.html" class="prev">
+      <span class="dir">← Previous</span>
+      <span class="title">Attention</span>
+    </a>
+    <a href="chapter-16.html" class="next">
+      <span class="dir">Next Chapter →</span>
+      <span class="title">The Whole Model</span>
+    </a>
+  </nav>
+</article>
+
+<script src="script.js"></script>
+</body>
+</html>

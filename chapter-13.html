@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 13: Transformer Block — How AI Thinks</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav class="site-nav">
+  <div class="nav-brand">How <em>AI</em> Thinks</div>
+  <div class="nav-progress-track"><div class="nav-progress-fill"></div></div>
+  <div class="nav-links">
+    <a href="chapter-12.html">← Prev</a>
+    <a href="index.html">Contents</a>
+    <a href="chapter-14.html">Next →</a>
+  </div>
+</nav>
+
+<article class="chapter-page prose">
+  <header class="chapter-header reveal">
+    <div class="chapter-label">Chapter 13</div>
+    <h1 class="chapter-title">Transformer Block</h1>
+    <p class="chapter-subtitle">Inside the repeating unit that makes up the bulk of the model — attention for mixing between positions, MLP for thinking within each position.</p>
+  </header>
+
+  <p class="reveal">The embedding module turned our 5 tokens into a 5×1280 matrix. Now this flows through 20 identical transformer blocks. Each block takes in T×D and outputs T×D. Let's look inside.</p>
+
+  <h2 class="reveal">Anatomy of a Transformer Block</h2>
+
+  <div class="flow reveal" style="flex-direction:column; gap:0.35rem; align-items:stretch; max-width:440px; margin:1.5rem auto;">
+    <div class="flow-box" style="background:var(--mint-dim); border:1px solid rgba(52,211,153,.3); color:var(--mint); width:100%; font-size:0.85rem;">Input: T × D</div>
+    <div style="text-align:center; color:var(--text-4); font-size:0.8rem;">↓</div>
+    <div class="flow-box" style="background:rgba(255,255,255,0.03); border:1px solid var(--border-medium); color:var(--text-3); width:100%; font-size:0.85rem;">RMS Norm</div>
+    <div style="text-align:center; color:var(--text-4); font-size:0.8rem;">↓</div>
+    <div class="flow-box" style="background:var(--cyan-dim); border:1px solid rgba(34,211,238,.3); color:var(--cyan); width:100%; font-size:0.85rem;">Causal Self-Attention (tokens talk to each other)</div>
+    <div style="text-align:center; color:var(--text-4); font-size:0.8rem;">↓ + skip connection (add input back)</div>
+    <div class="flow-box" style="background:rgba(255,255,255,0.03); border:1px solid var(--border-medium); color:var(--text-3); width:100%; font-size:0.85rem;">RMS Norm</div>
+    <div style="text-align:center; color:var(--text-4); font-size:0.8rem;">↓</div>
+    <div class="flow-box" style="background:var(--indigo-dim); border:1px solid rgba(129,140,248,.3); color:var(--indigo); width:100%; font-size:0.85rem;">MLP (each token thinks independently)</div>
+    <div style="text-align:center; color:var(--text-4); font-size:0.8rem;">↓ + skip connection (add back again)</div>
+    <div class="flow-box" style="background:var(--mint-dim); border:1px solid rgba(52,211,153,.3); color:var(--mint); width:100%; font-size:0.85rem;">Output: T × D</div>
+  </div>
+
+  <p class="reveal">Two main components: <strong>Causal Self-Attention</strong> (the blue box — where tokens pull in information from earlier positions) and <strong>MLP</strong> (the purple box — where each token thinks independently). Each has a skip connection (Chapter 12) and RMS Normalisation (Chapter 22).</p>
+
+  <h2 class="reveal">The MLP: Thinking Within Each Position</h2>
+
+  <p class="reveal">The MLP is our old friend from Chapter 10 — the linear-ReLU-linear sandwich. But inside the transformer, the dimensions are specific:</p>
+
+  <div class="flow reveal">
+    <div class="flow-box" style="background:var(--mint-dim); border:1px solid rgba(52,211,153,.3); color:var(--mint); font-size:0.8rem;">D = 1280</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box" style="background:var(--indigo-dim); border:1px solid rgba(129,140,248,.3); color:var(--indigo); font-size:0.8rem;">Linear: D → 4D (= 5120)</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box" style="background:var(--amber-dim); border:1px solid rgba(251,191,36,.3); color:var(--amber); font-size:0.8rem;">ReLU²</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box" style="background:var(--indigo-dim); border:1px solid rgba(129,140,248,.3); color:var(--indigo); font-size:0.8rem;">Linear: 4D → D (= 1280)</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box" style="background:var(--mint-dim); border:1px solid rgba(52,211,153,.3); color:var(--mint); font-size:0.8rem;">D = 1280</div>
+  </div>
+
+  <p class="reveal">The key idea: <strong>expand</strong> from D to 4D, apply nonlinearity, then <strong>contract</strong> back to D. This expansion gives the model room to compute complex things before squeezing back down. Think of it like writing a draft four times longer than your final essay, then condensing it.</p>
+
+  <div class="math-block reveal">
+    <div class="math-title">MLP Parameters (Per Block)</div>
+    <div class="math-step">
+      <div class="step-num">1</div>
+      <div class="step-content">First linear (D → 4D): 1280 × 5120 = <span class="hl">6,553,600</span></div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">2</div>
+      <div class="step-content">Second linear (4D → D): 5120 × 1280 = <span class="hl">6,553,600</span></div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">3</div>
+      <div class="step-content">ReLU has zero parameters</div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">Σ</div>
+      <div class="step-content">Total per block: <span class="result">13,107,200</span> (13.1M)</div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">×20</div>
+      <div class="step-content">Across all 20 blocks: <span class="result">262,144,000</span> (262M!)</div>
+    </div>
+  </div>
+
+  <p class="reveal">The MLP operates <strong>identically and independently</strong> on each position (row). If position 1 and position 3 have the same input vector, they'll get the same output. The MLP never mixes information between tokens — that's attention's job.</p>
+
+  <h3 class="reveal">Worked Example (D=2)</h3>
+
+  <div class="demo reveal">
+    <div class="demo-header">
+      <div class="demo-icon indigo">🔢</div>
+      <div class="demo-title">MLP with D=2, 4D=8, T=3</div>
+    </div>
+    <div style="font-family:var(--font-mono); font-size:0.85rem; line-height:2;">
+      <div><strong>Input</strong> (3×2): [ [1.00, 2.00], [-0.50, 1.00], [1.00, 2.00] ]</div>
+      <div style="color:var(--text-4);">↓ Linear (2→8): multiply by 2×8 weight matrix</div>
+      <div>After Linear: (3×8) — each row is now 8 numbers</div>
+      <div style="color:var(--text-4);">↓ ReLU: negative numbers → 0</div>
+      <div>After ReLU: (3×8) — some numbers became 0</div>
+      <div style="color:var(--text-4);">↓ Linear (8→2): compress back to 2 numbers per position</div>
+      <div><strong>Output</strong> (3×2): [ [0.35, -0.78], [0.12, 0.44], [0.35, -0.78] ]</div>
+    </div>
+    <p style="font-size:0.82rem; color:var(--text-3); margin-top:0.5rem;">Notice: positions 1 and 3 have the same input [1.00, 2.00], so they get the same output [0.35, -0.78]. The MLP treats each position independently.</p>
+  </div>
+
+  <h2 class="reveal">The Attention Layer: Mixing Between Positions</h2>
+
+  <p class="reveal">The MLP handles "thinking within each position." But to predict the next word after "The capital of France is", the model needs the "is" position to pull in information from "capital" and "France" — positions that are far away. This is what <strong>causal self-attention</strong> does: it lets each position look at all earlier positions and decide which information to bring in.</p>
+
+  <p class="reveal">Attention is so important and complex that it gets its own chapter — next up.</p>
+
+  <h2 class="reveal">What About RMS Norm?</h2>
+
+  <p class="reveal">RMS Normalisation rescales the numbers at each layer to keep them in a healthy range (preventing numbers from exploding or vanishing as they pass through many layers). It's like an automatic volume control. We'll cover the exact calculation in Chapter 22. For now, just know it has <strong>no learned parameters</strong> in our model — it's a fixed mathematical operation.</p>
+
+  <div class="takeaway reveal">
+    <div class="takeaway-label">Key Insight</div>
+    <p>Each transformer block has two halves: <strong>Attention</strong> (tokens look at each other — mixing information across positions) and <strong>MLP</strong> (each token processes its information independently — the linear→ReLU→linear sandwich). Both halves use skip connections. The MLP alone has 13.1 million parameters per block — across 20 blocks, that's 262 million parameters, and it's where a huge amount of learning happens. But it's the attention mechanism that makes the transformer truly special.</p>
+  </div>
+
+  <nav class="chapter-footer-nav reveal">
+    <a href="chapter-12.html" class="prev">
+      <span class="dir">← Previous</span>
+      <span class="title">Image Recognition and ResNet</span>
+    </a>
+    <a href="chapter-14.html" class="next">
+      <span class="dir">Next Chapter →</span>
+      <span class="title">Attention</span>
+    </a>
+  </nav>
+</article>
+
+<script src="script.js"></script>
+</body>
+</html>

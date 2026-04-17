@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 11: Cracking Open the Transformer — How AI Thinks</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav class="site-nav">
+  <div class="nav-brand">How <em>AI</em> Thinks</div>
+  <div class="nav-progress-track"><div class="nav-progress-fill"></div></div>
+  <div class="nav-links">
+    <a href="chapter-10.html">← Prev</a>
+    <a href="index.html">Contents</a>
+    <a href="chapter-12.html">Next →</a>
+  </div>
+</nav>
+
+<article class="chapter-page prose">
+  <header class="chapter-header reveal">
+    <div class="chapter-label">Chapter 11</div>
+    <h1 class="chapter-title">Cracking Open the Transformer</h1>
+    <p class="chapter-subtitle">From token IDs to rich embeddings — the first step inside the model that turns meaningless numbers into meaning.</p>
+  </header>
+
+  <h2 class="reveal">The Pandora Analogy</h2>
+
+  <p class="reveal">Remember the music streaming service Pandora? Every song had a database ID — say, 153,432 for "Love Yourself" by Justin Bieber. But an ID number tells you nothing useful. You can't recommend the next song based on "153,432."</p>
+
+  <p class="reveal">Pandora's insight: hire musicians to characterise each song along hundreds of dimensions — genre, tempo, instrumentation, mood, vocal style. Now song 153,432 has rich, meaningful information attached to it. Songs with similar descriptions can be recommended together.</p>
+
+  <p class="reveal"><strong>We need to do the same thing with tokens.</strong> Token 6237 (" Paris") is just a number. But "Paris" carries rich meaning: city, France, Europe, beautiful, Eiffel Tower, romance. The first step inside our transformer is to expand each token ID into a rich vector of numbers — an <strong>embedding</strong> — that captures this meaning.</p>
+
+  <h2 class="reveal">The Top-Level Architecture</h2>
+
+  <div class="flow reveal" style="flex-direction:column; gap:0.4rem; align-items:stretch; max-width:520px; margin:1.5rem auto;">
+    <div class="flow-box" style="background:var(--mint-dim); border:1px solid rgba(52,211,153,.3); color:var(--mint); width:100%; font-size:0.85rem;">Input: T token IDs (e.g., 5 tokens)</div>
+    <div style="text-align:center; color:var(--text-4); font-size:0.8rem;">↓</div>
+    <div class="flow-box" style="background:var(--amber-dim); border:1px solid rgba(251,191,36,.3); color:var(--amber); width:100%; font-size:0.85rem;">Embedding Module → T × D matrix (e.g., 5 × 1280)</div>
+    <div style="text-align:center; color:var(--text-4); font-size:0.8rem;">↓</div>
+    <div class="flow-box" style="background:var(--indigo-dim); border:1px solid rgba(129,140,248,.3); color:var(--indigo); width:100%; font-size:0.85rem;">🔁 Transformer Block × 20 layers (each: T×D → T×D)</div>
+    <div style="text-align:center; color:var(--text-4); font-size:0.8rem;">↓</div>
+    <div class="flow-box" style="background:var(--coral-dim); border:1px solid rgba(251,113,133,.3); color:var(--coral); width:100%; font-size:0.85rem;">Final Linear Layer → T × V (e.g., 5 × 65,536)</div>
+  </div>
+
+  <h2 class="reveal">The Dimension D</h2>
+
+  <p class="reveal">D is the <strong>embedding dimension</strong> — how many numbers represent each token. It's the single most important size in the model. Everything between the embedding module and the final output layer operates at dimension D.</p>
+
+  <div class="demo reveal">
+    <table class="data-table">
+      <thead><tr><th>Model</th><th>Layers</th><th>D</th><th>Rule</th></tr></thead>
+      <tbody>
+        <tr><td>20-layer model</td><td>20</td><td style="color:var(--mint)">1,280</td><td>D = 64 × layers</td></tr>
+        <tr><td>32-layer model</td><td>32</td><td style="color:var(--mint)">2,048</td><td>D = 64 × layers</td></tr>
+        <tr><td>GPT-3 (175B)</td><td>96</td><td style="color:var(--mint)">12,288</td><td>D = 128 × layers</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:0.82rem; color:var(--text-3);">D can't be too small — how could 4 numbers encode enough meaning to predict among 65,536 tokens? It also can't be too large relative to the model, or training won't converge.</p>
+  </div>
+
+  <h2 class="reveal">The Embedding Module</h2>
+
+  <p class="reveal">Mechanically, the embedding is a <strong>lookup table</strong>. For each of the V = 65,536 tokens, we store D = 1,280 numbers. When token 6237 (" Paris") comes in, we look up row 6237 and get back 1,280 numbers.</p>
+
+  <div class="card amber reveal">
+    <div class="card-label">Contrived Example (D=4)</div>
+    <p style="font-family:var(--font-mono); font-size:0.85rem; line-height:2; margin:0;">
+      "Paris" → [<span style="color:var(--mint)">0.9</span>, <span style="color:var(--indigo)">-0.2</span>, <span style="color:var(--coral)">-0.1</span>, <span style="color:var(--amber)">0.8</span>] ← noun, not adjective, not red, positive<br>
+      "red" &nbsp;&nbsp;→ [<span style="color:var(--mint)">0.1</span>, <span style="color:var(--indigo)">0.9</span>, <span style="color:var(--coral)">0.9</span>, <span style="color:var(--amber)">0.3</span>] ← slightly noun, adjective, very red, slightly positive<br>
+      "dog" &nbsp;&nbsp;→ [<span style="color:var(--mint)">0.9</span>, <span style="color:var(--indigo)">-0.3</span>, <span style="color:var(--coral)">-0.1</span>, <span style="color:var(--amber)">0.7</span>] ← noun, not adjective, not red, positive<br>
+      "ugly" &nbsp;→ [<span style="color:var(--mint)">-0.1</span>, <span style="color:var(--indigo)">0.8</span>, <span style="color:var(--coral)">0.0</span>, <span style="color:var(--amber)">-0.7</span>] ← not noun, adjective, not red, negative
+    </p>
+    <p style="font-size:0.82rem; color:var(--text-3); margin-top:0.5rem;">In reality, D = 1,280 and the dimensions don't map to human concepts this neatly. The model figures out what each dimension should mean during training.</p>
+  </div>
+
+  <p class="reveal">The crucial thing: the embedding values are <strong>learned during training</strong>. Initially they're random. Through backpropagation, tokens that appear in similar contexts develop similar embeddings. "Paris" and "London" end up close together in this 1,280-dimensional space; "Paris" and "because" end up far apart.</p>
+
+  <h2 class="reveal">Embedding Parameters</h2>
+
+  <div class="math-block reveal">
+    <div class="math-title">How Many Parameters in the Embedding Module?</div>
+    <div class="math-step">
+      <div class="step-num">1</div>
+      <div class="step-content">We need D numbers for each token in the vocabulary</div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">2</div>
+      <div class="step-content">D × V = 1,280 × 65,536 = <span class="result">83,886,080</span></div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">!</div>
+      <div class="step-content">That's <strong>84 million parameters</strong> just for the embedding module!</div>
+    </div>
+  </div>
+
+  <h2 class="reveal">Tamil Embedding Similarity</h2>
+
+  <div class="card amber reveal">
+    <div class="card-label">Tamil Tokens in Embedding Space</div>
+    <p>After training, Tamil tokens with similar meanings cluster together:</p>
+    <p style="font-family:var(--font-mono); font-size:0.85rem; margin-top:0.5rem;">
+      <span class="tamil">சென்னை</span> (Chennai) ↔ <span class="tamil">மும்பை</span> (Mumbai) → <span style="color:var(--mint)">very close</span> (both Indian cities)<br>
+      <span class="tamil">சென்னை</span> (Chennai) ↔ <span class="tamil">பாரிஸ்</span> (Paris) → <span style="color:var(--amber)">somewhat close</span> (both cities)<br>
+      <span class="tamil">சென்னை</span> (Chennai) ↔ <span class="tamil">ஓடினான்</span> (he ran) → <span style="color:var(--coral)">far apart</span> (city vs verb)
+    </p>
+  </div>
+
+  <h2 class="reveal">Vectors: The Language of Tensors</h2>
+
+  <p class="reveal">A <strong>vector</strong> is just a 1-dimensional list of numbers — like a single row of a matrix. When we say "the embedding of 'Paris' is a vector of size 1,280," we mean it's 1,280 numbers in a list. Think of each row of our T×D matrix as a vector representing one token.</p>
+
+  <p class="reveal">After embedding, our 5-token input "<bos> He went to the" becomes a 5×1280 matrix — 5 vectors, each with 1,280 numbers full of meaning. This matrix flows through 20 transformer blocks, each outputting another 5×1280 matrix with increasingly refined understanding. Finally, the output layer converts each 1280-number vector into 65,536 probabilities.</p>
+
+  <div class="takeaway reveal">
+    <div class="takeaway-label">Key Insight</div>
+    <p>The embedding module transforms meaningless token IDs into rich, 1280-dimensional vectors of meaning — learned automatically during training. Tokens that appear in similar contexts develop similar embeddings. This is the foundation upon which everything else in the transformer builds. With 84 million parameters just in embeddings, you can see why these models need so much data and compute to train.</p>
+  </div>
+
+  <nav class="chapter-footer-nav reveal">
+    <a href="chapter-10.html" class="prev">
+      <span class="dir">← Previous</span>
+      <span class="title">Deep Networks</span>
+    </a>
+    <a href="chapter-12.html" class="next">
+      <span class="dir">Next Chapter →</span>
+      <span class="title">Image Recognition and ResNet</span>
+    </a>
+  </nav>
+</article>
+
+<script src="script.js"></script>
+</body>
+</html>
