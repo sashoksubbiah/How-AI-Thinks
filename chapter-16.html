@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 16: The Whole Model — How AI Thinks</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav class="site-nav">
+  <div class="nav-brand">How <em>AI</em> Thinks</div>
+  <div class="nav-progress-track"><div class="nav-progress-fill"></div></div>
+  <div class="nav-links">
+    <a href="chapter-15.html">← Prev</a>
+    <a href="index.html">Contents</a>
+    <a href="chapter-17.html">Next →</a>
+  </div>
+</nav>
+
+<article class="chapter-page prose">
+  <header class="chapter-header reveal">
+    <div class="chapter-label">Chapter 16</div>
+    <h1 class="chapter-title">The Whole Model</h1>
+    <p class="chapter-subtitle">Putting it all together — and counting every single one of the 560,988,160 parameters.</p>
+  </header>
+
+  <p class="reveal">We've now seen every piece. Let's put the complete architecture in one place and do the most satisfying exercise in this guide: <strong>count every parameter</strong>.</p>
+
+  <h2 class="reveal">The Full Architecture</h2>
+
+  <div class="flow reveal" style="flex-direction:column; gap:0.3rem; align-items:stretch; max-width:520px; margin:1.5rem auto;">
+    <div class="flow-box" style="background:var(--mint-dim); border:1px solid rgba(52,211,153,.3); color:var(--mint); width:100%; font-size:0.82rem;">Input: B × T token IDs (e.g., 32 sequences × 2048 tokens)</div>
+    <div style="text-align:center; color:var(--text-4); font-size:0.75rem;">↓ Lookup table</div>
+    <div class="flow-box" style="background:var(--amber-dim); border:1px solid rgba(251,191,36,.3); color:var(--amber); width:100%; font-size:0.82rem;">Embedding: B × T × D (32 × 2048 × 1280)</div>
+    <div style="text-align:center; color:var(--text-4); font-size:0.75rem;">↓ × 20 blocks</div>
+    <div class="flow-box" style="background:var(--indigo-dim); border:1px solid rgba(129,140,248,.3); color:var(--indigo); width:100%; font-size:0.82rem; padding:14px 16px;">
+      Transformer Block:<br>
+      <span style="font-size:0.75rem;">Norm → Attention(Q,K,V linear + RoPE + mask + multi-head) → +skip → Norm → MLP(Linear→ReLU²→Linear) → +skip</span>
+    </div>
+    <div style="text-align:center; color:var(--text-4); font-size:0.75rem;">↓ Final norm</div>
+    <div class="flow-box" style="background:var(--coral-dim); border:1px solid rgba(251,113,133,.3); color:var(--coral); width:100%; font-size:0.82rem;">Final Linear: B × T × V (32 × 2048 × 65,536)</div>
+    <div style="text-align:center; color:var(--text-4); font-size:0.75rem;">↓ Softmax → probabilities</div>
+    <div class="flow-box" style="background:var(--cyan-dim); border:1px solid rgba(34,211,238,.3); color:var(--cyan); width:100%; font-size:0.82rem;">Output: next-token probability distributions</div>
+  </div>
+
+  <h2 class="reveal">Counting Every Parameter</h2>
+
+  <p class="reveal">Let's count for the 20-layer model: V = 65,536, D = 1,280, 20 transformer blocks, no biases in any linear layers.</p>
+
+  <div class="math-block reveal">
+    <div class="math-title">Parameter Count</div>
+    <div class="math-step">
+      <div class="step-num">E</div>
+      <div class="step-content"><strong>Embedding module:</strong> V × D = 65,536 × 1,280 = <span class="result">83,886,080</span></div>
+    </div>
+    <div class="math-step" style="margin-top:1rem;">
+      <div class="step-num">A</div>
+      <div class="step-content"><strong>Attention per block:</strong><br>
+        Q linear: D × D = 1,280 × 1,280 = 1,638,400<br>
+        K linear: D × D = 1,638,400<br>
+        V linear: D × D = 1,638,400<br>
+        Output linear: D × D = 1,638,400<br>
+        Subtotal: <span class="hl">6,553,600</span></div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">M</div>
+      <div class="step-content"><strong>MLP per block:</strong><br>
+        Linear D→4D: 1,280 × 5,120 = 6,553,600<br>
+        Linear 4D→D: 5,120 × 1,280 = 6,553,600<br>
+        Subtotal: <span class="hl">13,107,200</span></div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">B</div>
+      <div class="step-content"><strong>Per transformer block:</strong> 6,553,600 + 13,107,200 = <span class="hl">19,660,800</span></div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">×20</div>
+      <div class="step-content"><strong>All 20 blocks:</strong> 20 × 19,660,800 = <span class="result">393,216,000</span></div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">F</div>
+      <div class="step-content"><strong>Final linear:</strong> D × V = 1,280 × 65,536 = <span class="result">83,886,080</span></div>
+    </div>
+    <div class="math-step" style="margin-top:0.75rem; padding-top:0.75rem; border-top:1px solid var(--border-subtle);">
+      <div class="step-num">Σ</div>
+      <div class="step-content"><strong>GRAND TOTAL:</strong> 83,886,080 + 393,216,000 + 83,886,080 = <span class="result" style="font-size:1.1rem;">560,988,160</span></div>
+    </div>
+  </div>
+
+  <p class="reveal">Over <strong>half a billion parameters</strong> — and this is considered a small model! GPT-3 has 175 billion. GPT-4 is rumoured to have over a trillion.</p>
+
+  <h2 class="reveal">🎮 Interactive: Parameter Counter</h2>
+
+  <div class="demo reveal" id="paramDemo">
+    <div class="demo-header">
+      <div class="demo-icon mint">🔢</div>
+      <div class="demo-title">Model Parameter Calculator</div>
+    </div>
+    <p class="demo-desc">Adjust the model dimensions to see how parameter count changes.</p>
+
+    <div class="slider-row">
+      <span class="slider-label" style="min-width:60px;">Layers</span>
+      <input type="range" id="nLayers" min="4" max="96" value="20" step="4">
+      <span class="slider-val" id="nLayersV">20</span>
+    </div>
+    <div class="slider-row">
+      <span class="slider-label" style="min-width:60px;">D</span>
+      <input type="range" id="dModel" min="256" max="12288" value="1280" step="64">
+      <span class="slider-val" id="dModelV">1280</span>
+    </div>
+    <div class="slider-row">
+      <span class="slider-label" style="min-width:60px;">Vocab</span>
+      <input type="range" id="vocabS" min="8192" max="131072" value="65536" step="8192">
+      <span class="slider-val" id="vocabV">65536</span>
+    </div>
+
+    <div class="result-box" id="paramResult" style="margin-top:1rem;"></div>
+  </div>
+
+  <h2 class="reveal">Where the Parameters Live</h2>
+
+  <div class="demo reveal">
+    <div class="demo-header">
+      <div class="demo-icon indigo">📊</div>
+      <div class="demo-title">Parameter Distribution (20-layer model)</div>
+    </div>
+    <div class="prob-row"><span class="prob-label">Embeddings</span><div class="prob-track"><div class="prob-fill" style="width:15%; background:var(--amber);"></div></div><span class="prob-val">15.0%</span></div>
+    <div class="prob-row"><span class="prob-label">Attention (×20)</span><div class="prob-track"><div class="prob-fill" style="width:23.4%; background:var(--cyan);"></div></div><span class="prob-val">23.4%</span></div>
+    <div class="prob-row"><span class="prob-label">MLP (×20)</span><div class="prob-track"><div class="prob-fill" style="width:46.7%; background:var(--indigo);"></div></div><span class="prob-val">46.7%</span></div>
+    <div class="prob-row"><span class="prob-label">Final Linear</span><div class="prob-track"><div class="prob-fill" style="width:15%; background:var(--coral);"></div></div><span class="prob-val">15.0%</span></div>
+    <p style="font-size:0.82rem; color:var(--text-3); margin-top:0.5rem;">Nearly half the parameters are in the MLP layers. That's where a huge amount of the model's "knowledge" gets stored.</p>
+  </div>
+
+  <div class="takeaway reveal">
+    <div class="takeaway-label">Key Insight</div>
+    <p>You now understand <strong>every single component</strong> of a GPT model: token embedding, 20 transformer blocks (each with attention + MLP + skip connections + normalization), and a final linear projection. The 20-layer model has exactly <strong>560,988,160 parameters</strong>. Most are in the MLP layers (47%) and attention layers (23%), with embeddings and the final linear layer taking up the rest. Norm, ReLU, masking, and RoPE all have zero learned parameters — the magic is in the linear transformations and the clever architecture that connects them.</p>
+  </div>
+
+  <nav class="chapter-footer-nav reveal">
+    <a href="chapter-15.html" class="prev">
+      <span class="dir">← Previous</span>
+      <span class="title">Rotary Embeddings</span>
+    </a>
+    <a href="chapter-17.html" class="next">
+      <span class="dir">Next Chapter →</span>
+      <span class="title">KV Cache</span>
+    </a>
+  </nav>
+</article>
+
+<script src="script.js"></script>
+<script>
+function updateParams() {
+  const L = +document.getElementById('nLayers').value;
+  const D = +document.getElementById('dModel').value;
+  const V = +document.getElementById('vocabS').value;
+  document.getElementById('nLayersV').textContent = L;
+  document.getElementById('dModelV').textContent = D;
+  document.getElementById('vocabV').textContent = V.toLocaleString();
+
+  const embed = V * D;
+  const attnPerBlock = 4 * D * D;
+  const mlpPerBlock = 2 * D * 4 * D;
+  const perBlock = attnPerBlock + mlpPerBlock;
+  const allBlocks = L * perBlock;
+  const finalLinear = D * V;
+  const total = embed + allBlocks + finalLinear;
+
+  const fmt = n => n >= 1e9 ? (n/1e9).toFixed(2) + 'B' : n >= 1e6 ? (n/1e6).toFixed(1) + 'M' : n.toLocaleString();
+
+  document.getElementById('paramResult').innerHTML = `
+    <div style="display:grid; grid-template-columns:1fr auto; gap:0.3rem 1rem; font-size:0.88rem;">
+      <span>Embedding (V×D):</span><span style="color:var(--amber)">${fmt(embed)}</span>
+      <span>Attention per block (4×D²):</span><span style="color:var(--cyan)">${fmt(attnPerBlock)}</span>
+      <span>MLP per block (8×D²):</span><span style="color:var(--indigo)">${fmt(mlpPerBlock)}</span>
+      <span>Per block total:</span><span>${fmt(perBlock)}</span>
+      <span>All ${L} blocks:</span><span style="color:var(--mint)">${fmt(allBlocks)}</span>
+      <span>Final linear (D×V):</span><span style="color:var(--coral)">${fmt(finalLinear)}</span>
+      <span style="border-top:1px solid var(--border-subtle); padding-top:0.5rem; font-weight:600; color:var(--text-1);">TOTAL:</span>
+      <span style="border-top:1px solid var(--border-subtle); padding-top:0.5rem; font-weight:700; color:var(--mint); font-size:1.1rem;">${fmt(total)}</span>
+    </div>
+  `;
+}
+document.querySelectorAll('#paramDemo input').forEach(el => el.addEventListener('input', updateParams));
+updateParams();
+</script>
+</body>
+</html>

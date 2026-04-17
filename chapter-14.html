@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 14: Attention — How AI Thinks</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav class="site-nav">
+  <div class="nav-brand">How <em>AI</em> Thinks</div>
+  <div class="nav-progress-track"><div class="nav-progress-fill"></div></div>
+  <div class="nav-links">
+    <a href="chapter-13.html">← Prev</a>
+    <a href="index.html">Contents</a>
+    <a href="chapter-15.html">Next →</a>
+  </div>
+</nav>
+
+<article class="chapter-page prose">
+  <header class="chapter-header reveal">
+    <div class="chapter-label">Chapter 14</div>
+    <h1 class="chapter-title">Attention</h1>
+    <p class="chapter-subtitle">The heart of the transformer — how each token decides which earlier tokens to pay attention to, and how information flows between positions.</p>
+  </header>
+
+  <h2 class="reveal">How Humans Pay Attention</h2>
+
+  <p class="reveal">Consider reading this paragraph word by word:</p>
+
+  <div class="card amber reveal">
+    <p style="color:var(--text-1); font-family:var(--font-display); font-size:1.05rem; line-height:1.7;">"In 1873, Tesla returned to his birthtown, Smiljan. Shortly after he arrived, Tesla contracted cholera; he was bedridden for nine months and was near death multiple times. Tesla's father promised to send him to the best engineering school if he recovered. <strong>What was the year when Tesla went back to Smiljan?</strong>"</p>
+  </div>
+
+  <p class="reveal">With every word, your understanding refines. When you read "Tesla" after "1873," you know it's a person, not a car company (wrong era). When you read "he," you know it means Tesla. When the question asks for a year, you mentally reach back to "1873" at the start.</p>
+
+  <p class="reveal">The model needs to do the same thing. When processing that final question mark, it needs to <strong>attend</strong> to "1873" from much earlier. The attention mechanism is how this happens.</p>
+
+  <h2 class="reveal">The Query / Key / Value Framework</h2>
+
+  <div class="analogy reveal">
+    <div class="analogy-icon">📚</div>
+    <p><strong>Library analogy:</strong> You walk into a library with a question (your <strong>query</strong>). Each book has a label on its spine (its <strong>key</strong>) advertising what information it contains. You compare your query against each key. The books with matching keys — you pull them off the shelf and read their contents (their <strong>values</strong>).</p>
+  </div>
+
+  <p class="reveal">In the transformer, every position emits three things (via learned linear transformations):</p>
+
+  <div class="card-grid reveal">
+    <div class="grid-card" style="border-color:rgba(251,113,133,.3);">
+      <div class="gc-icon">❓</div>
+      <h4 style="color:var(--coral);">Query (Q)</h4>
+      <p>"What information am I looking for from earlier positions?"</p>
+    </div>
+    <div class="grid-card" style="border-color:rgba(129,140,248,.3);">
+      <div class="gc-icon">🔑</div>
+      <h4 style="color:var(--indigo);">Key (K)</h4>
+      <p>"What kind of information do I have to offer?"</p>
+    </div>
+    <div class="grid-card" style="border-color:rgba(52,211,153,.3);">
+      <div class="gc-icon">📦</div>
+      <h4 style="color:var(--mint);">Value (V)</h4>
+      <p>"Here is my actual information."</p>
+    </div>
+  </div>
+
+  <h2 class="reveal">Step-by-Step Attention Calculation</h2>
+
+  <p class="reveal">Let's walk through attention for "The capital of France is" with D=2 (simplified to 2 dimensions so we can visualize). After the Q, K, V linear transformations:</p>
+
+  <div class="demo reveal">
+    <table class="data-table">
+      <thead><tr><th>Position</th><th>Token</th><th>Query</th><th>Key</th><th>Value</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>The</td><td style="color:var(--text-4)">—</td><td>[0.91, 0.42]</td><td>[0.30, 0.10]</td></tr>
+        <tr><td>2</td><td>capital</td><td style="color:var(--text-4)">—</td><td>[-0.44, 1.34]</td><td>[0.80, -0.20]</td></tr>
+        <tr><td>3</td><td>of</td><td style="color:var(--text-4)">—</td><td>[-0.77, 1.18]</td><td>[0.10, 0.50]</td></tr>
+        <tr><td>4</td><td>France</td><td style="color:var(--text-4)">—</td><td>[-0.55, 1.27]</td><td>[0.60, 0.30]</td></tr>
+        <tr><td>5</td><td style="color:var(--mint)">is</td><td style="color:var(--coral)">[-0.51, 1.32]</td><td>[-0.63, 1.22]</td><td>[0.20, 0.40]</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:0.82rem; color:var(--text-3); margin-top:0.5rem;">We focus on position 5 ("is"). Its query [-0.51, 1.32] will be compared against all keys.</p>
+  </div>
+
+  <h3 class="reveal">Step 1: Compute Scores (Query · Key)</h3>
+
+  <p class="reveal">Multiply the query for position 5 element-wise with each key and sum (dot product). Higher score = query and key point in the same direction = more relevant.</p>
+
+  <div class="math-block reveal">
+    <div class="math-title">Score = Query₅ · Key (dot product)</div>
+    <div class="math-step">
+      <div class="step-num">1</div>
+      <div class="step-content">"The": (-0.51)(0.91) + (1.32)(0.42) = -0.46 + 0.55 = <span class="hl">0.09</span></div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">2</div>
+      <div class="step-content">"capital": (-0.51)(-0.44) + (1.32)(1.34) = 0.22 + 1.77 = <span class="result">1.99</span> ← highest!</div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">3</div>
+      <div class="step-content">"of": (-0.51)(-0.77) + (1.32)(1.18) = 0.39 + 1.56 = <span class="hl">1.95</span></div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">4</div>
+      <div class="step-content">"France": (-0.51)(-0.55) + (1.32)(1.27) = 0.28 + 1.68 = <span class="hl">1.96</span></div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">5</div>
+      <div class="step-content">"is": (-0.51)(-0.63) + (1.32)(1.22) = 0.32 + 1.61 = <span class="hl">1.93</span></div>
+    </div>
+  </div>
+
+  <h3 class="reveal">Step 2: Softmax → Attention Weights</h3>
+
+  <p class="reveal">Convert scores to probabilities using softmax (same function from Chapter 8). These are the <strong>attention weights</strong> — how much position 5 will "pay attention" to each earlier position:</p>
+
+  <div class="demo reveal" id="attnDemo">
+    <div class="demo-header">
+      <div class="demo-icon cyan">👁️</div>
+      <div class="demo-title">Attention Weights for Position 5 ("is")</div>
+    </div>
+    <div class="prob-row"><span class="prob-label">capital</span><div class="prob-track"><div class="prob-fill" style="width:60%; background:var(--mint);"></div></div><span class="prob-val">~60%</span></div>
+    <div class="prob-row"><span class="prob-label">France</span><div class="prob-track"><div class="prob-fill" style="width:26%; background:var(--indigo);"></div></div><span class="prob-val">~26%</span></div>
+    <div class="prob-row"><span class="prob-label">of</span><div class="prob-track"><div class="prob-fill" style="width:8%; background:var(--amber);"></div></div><span class="prob-val">~8%</span></div>
+    <div class="prob-row"><span class="prob-label">is</span><div class="prob-track"><div class="prob-fill" style="width:4%; background:var(--text-3);"></div></div><span class="prob-val">~4%</span></div>
+    <div class="prob-row"><span class="prob-label">The</span><div class="prob-track"><div class="prob-fill" style="width:2%; background:var(--text-4);"></div></div><span class="prob-val">~2%</span></div>
+    <p style="font-size:0.82rem; color:var(--text-3); margin-top:0.5rem;">"is" pays 60% attention to "capital" — exactly what we'd want when trying to predict "Paris"!</p>
+  </div>
+
+  <h3 class="reveal">Step 3: Weighted Sum of Values → Output</h3>
+
+  <p class="reveal">The output for position 5 is 60% of "capital"'s value + 26% of "France"'s value + 8% of "of"'s value + ... This blends information from the most relevant positions into position 5's representation.</p>
+
+  <div class="math-block reveal">
+    <div class="math-title">Output = Σ (attention_weight × value)</div>
+    <div class="math-step">
+      <div class="step-num">→</div>
+      <div class="step-content">0.60 × [0.80, -0.20] + 0.26 × [0.60, 0.30] + 0.08 × [0.10, 0.50] + ...</div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">=</div>
+      <div class="step-content">[0.48+0.16+0.01+..., -0.12+0.08+0.04+...] ≈ <span class="result">[0.66, -0.01]</span></div>
+    </div>
+  </div>
+
+  <h2 class="reveal">Causal Masking: No Peeking!</h2>
+
+  <p class="reveal">During training, the full sequence is fed in at once (Chapter 8). But position 3 ("of") must not see positions 4 or 5 — it needs to predict the next token without cheating. The fix: set the attention scores for future positions to <strong>negative infinity</strong> before softmax. After softmax, these become exactly zero.</p>
+
+  <div class="demo reveal">
+    <div class="demo-header">
+      <div class="demo-icon coral">🎭</div>
+      <div class="demo-title">The Causal Mask</div>
+    </div>
+    <div style="font-family:var(--font-mono); font-size:0.82rem; line-height:2;">
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; The &nbsp; cap &nbsp; of &nbsp; Fra &nbsp; is</div>
+      <div>The &nbsp;&nbsp;[<span style="color:var(--mint)">✓</span> &nbsp;&nbsp;&nbsp;<span style="color:var(--coral)">✗</span> &nbsp;&nbsp;&nbsp;<span style="color:var(--coral)">✗</span> &nbsp;&nbsp;&nbsp;<span style="color:var(--coral)">✗</span> &nbsp;&nbsp;&nbsp;<span style="color:var(--coral)">✗</span>]</div>
+      <div>cap &nbsp;&nbsp;[<span style="color:var(--mint)">✓</span> &nbsp;&nbsp;&nbsp;<span style="color:var(--mint)">✓</span> &nbsp;&nbsp;&nbsp;<span style="color:var(--coral)">✗</span> &nbsp;&nbsp;&nbsp;<span style="color:var(--coral)">✗</span> &nbsp;&nbsp;&nbsp;<span style="color:var(--coral)">✗</span>]</div>
+      <div>of &nbsp;&nbsp;&nbsp;[<span style="color:var(--mint)">✓</span> &nbsp;&nbsp;&nbsp;<span style="color:var(--mint)">✓</span> &nbsp;&nbsp;&nbsp;<span style="color:var(--mint)">✓</span> &nbsp;&nbsp;&nbsp;<span style="color:var(--coral)">✗</span> &nbsp;&nbsp;&nbsp;<span style="color:var(--coral)">✗</span>]</div>
+      <div>Fra &nbsp;&nbsp;[<span style="color:var(--mint)">✓</span> &nbsp;&nbsp;&nbsp;<span style="color:var(--mint)">✓</span> &nbsp;&nbsp;&nbsp;<span style="color:var(--mint)">✓</span> &nbsp;&nbsp;&nbsp;<span style="color:var(--mint)">✓</span> &nbsp;&nbsp;&nbsp;<span style="color:var(--coral)">✗</span>]</div>
+      <div>is &nbsp;&nbsp;&nbsp;[<span style="color:var(--mint)">✓</span> &nbsp;&nbsp;&nbsp;<span style="color:var(--mint)">✓</span> &nbsp;&nbsp;&nbsp;<span style="color:var(--mint)">✓</span> &nbsp;&nbsp;&nbsp;<span style="color:var(--mint)">✓</span> &nbsp;&nbsp;&nbsp;<span style="color:var(--mint)">✓</span>]</div>
+    </div>
+    <p style="font-size:0.82rem; color:var(--text-3); margin-top:0.5rem;">✓ = can attend, ✗ = blocked (−∞ before softmax → 0 after). Lower-left triangle only — each position can only look at itself and earlier positions. This is "causal" (can't see the future).</p>
+  </div>
+
+  <h2 class="reveal">Multi-Head Attention</h2>
+
+  <p class="reveal">The model doesn't do attention just once — it does it <strong>multiple times in parallel</strong>, each with different learned Q, K, V transformations. These are called <strong>heads</strong>.</p>
+
+  <div class="card indigo reveal">
+    <div class="card-label">Why Multiple Heads?</div>
+    <p>Different heads can learn to focus on different things:</p>
+    <p style="margin-top:0.5rem;">• <strong>Head 1</strong> might track grammar (subject-verb agreement)<br>
+    • <strong>Head 2</strong> might track semantic meaning (what the sentence is about)<br>
+    • <strong>Head 3</strong> might track nearby words (local context)<br>
+    • <strong>Head 4</strong> might track distant references ("he" → "Tesla")</p>
+  </div>
+
+  <p class="reveal">With D = 1280 and 10 heads, each head works in D/10 = 128 dimensions. The process: split Q, K, V into 10 chunks → do attention independently in each chunk → rejoin into one D-sized vector. No extra parameters for splitting/rejoining — it's just reshaping the tensors.</p>
+
+  <div class="math-block reveal">
+    <div class="math-title">Attention Parameters (Per Block)</div>
+    <div class="math-step">
+      <div class="step-num">Q</div>
+      <div class="step-content">Q linear transform: D × D = 1280 × 1280 = <span class="hl">1,638,400</span></div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">K</div>
+      <div class="step-content">K linear transform: D × D = <span class="hl">1,638,400</span></div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">V</div>
+      <div class="step-content">V linear transform: D × D = <span class="hl">1,638,400</span></div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">O</div>
+      <div class="step-content">Output linear transform: D × D = <span class="hl">1,638,400</span></div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">Σ</div>
+      <div class="step-content">Total attention params per block: <span class="result">6,553,600</span> (6.6M)</div>
+    </div>
+  </div>
+
+  <p class="reveal">Note: splitting into heads, rotary embeddings (Chapter 15), and the actual dot-product/softmax attention computation all have <strong>zero learned parameters</strong>. The learning happens entirely in the four linear transformations (Q, K, V, output).</p>
+
+  <div class="takeaway reveal">
+    <div class="takeaway-label">Key Insight</div>
+    <p><strong>Attention is the mechanism that lets tokens look at each other.</strong> Each position generates a Query ("what do I need?"), every position offers Keys ("what do I have?") and Values ("here's my info"). High Query-Key matches mean high attention weights, which means more of that position's Value gets mixed in. Causal masking ensures no position can see the future. Multi-head attention lets the model attend to multiple different types of relationships simultaneously. This is the single most important innovation in the transformer.</p>
+  </div>
+
+  <nav class="chapter-footer-nav reveal">
+    <a href="chapter-13.html" class="prev">
+      <span class="dir">← Previous</span>
+      <span class="title">Transformer Block</span>
+    </a>
+    <a href="chapter-15.html" class="next">
+      <span class="dir">Next Chapter →</span>
+      <span class="title">Rotary Embeddings</span>
+    </a>
+  </nav>
+</article>
+
+<script src="script.js"></script>
+</body>
+</html>

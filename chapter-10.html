@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 10: Deep Networks — How AI Thinks</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav class="site-nav">
+  <div class="nav-brand">How <em>AI</em> Thinks</div>
+  <div class="nav-progress-track"><div class="nav-progress-fill"></div></div>
+  <div class="nav-links">
+    <a href="chapter-9.html">← Prev</a>
+    <a href="index.html">Contents</a>
+    <a href="chapter-11.html">Next →</a>
+  </div>
+</nav>
+
+<article class="chapter-page prose">
+  <header class="chapter-header reveal">
+    <div class="chapter-label">Chapter 10</div>
+    <h1 class="chapter-title">Deep Networks: Hedgehogs and Quills</h1>
+    <p class="chapter-subtitle">Why a single layer can only draw a straight line — and how adding layers and nonlinearity lets a model learn any pattern.</p>
+  </header>
+
+  <p class="reveal">Before we crack open the transformer, we need a few more concepts. In Chapter 3 our turkey model had one layer — multiply and add. That can only produce a straight line. Real-world relationships are messy, curved, and complex. Let's see this with a new example.</p>
+
+  <h2 class="reveal">The Alien Hedgehog Problem</h2>
+
+  <p class="reveal">Imagine you land on an alien planet with lots of hedgehogs. You measure the length of 1,000 of them and count their quills. Plot the data:</p>
+
+  <div class="demo reveal">
+    <div class="demo-header">
+      <div class="demo-icon amber">🦔</div>
+      <div class="demo-title">Hedgehog Data: Length vs Quills</div>
+    </div>
+    <div class="chart-container" style="height:220px;">
+      <canvas id="hedgehogChart"></canvas>
+    </div>
+    <p style="font-size:0.82rem; color:var(--text-3); margin-top:0.5rem;">The relationship is clearly not a straight line — it goes up, down, and up again. A simple linear model (like our turkey model) would draw a straight line through this mess and miss the pattern entirely.</p>
+  </div>
+
+  <h2 class="reveal">Training vs Validation Data</h2>
+
+  <p class="reveal">Before we build models, an important concept: <strong>don't test on training data</strong>. If you use all 1,000 hedgehogs for training, the model might memorize the specific data points rather than learning the underlying pattern. This is called <strong>overfitting</strong>.</p>
+
+  <p class="reveal">The fix: split the data into <strong>training</strong> (900 hedgehogs) and <strong>validation</strong> (100 hedgehogs). Train only on the 900, then check loss on the 100 the model has never seen. If training loss is low but validation loss is high — the model memorized instead of learned.</p>
+
+  <div class="card-grid reveal">
+    <div class="grid-card" style="border-color:rgba(251,113,133,.3);">
+      <div class="gc-icon">📈</div>
+      <h4 style="color:var(--coral);">Overfitting</h4>
+      <p>Training loss: great. Validation loss: terrible. Model memorized the data, didn't learn the pattern.</p>
+    </div>
+    <div class="grid-card" style="border-color:rgba(251,191,36,.3);">
+      <div class="gc-icon">📉</div>
+      <h4 style="color:var(--amber);">Underfitting</h4>
+      <p>Both losses are high. Model is too simple to capture the pattern.</p>
+    </div>
+    <div class="grid-card" style="border-color:rgba(52,211,153,.3);">
+      <div class="gc-icon">✅</div>
+      <h4 style="color:var(--mint);">Just Right</h4>
+      <p>Both losses are low. Model learned the real pattern and generalizes to new data.</p>
+    </div>
+  </div>
+
+  <h2 class="reveal">Model #1: Just Predict the Average</h2>
+
+  <p class="reveal">The simplest possible model: ignore the input entirely and always predict the average number of quills (3,030). No weights at all. This gives a Mean Squared Error (MSE) loss of about <strong>1.05</strong> (meaning we're off by about 1,025 quills on average).</p>
+
+  <h2 class="reveal">Model #2: A Single Linear Layer</h2>
+
+  <p class="reveal">Like the turkey model but with one input (length) instead of two: <code>prediction = w × length + b</code>. After training, this draws the best possible straight line through the data. Loss drops to about <strong>0.88</strong> — better than the average, but still can only draw a straight line.</p>
+
+  <h2 class="reveal">Model #3: Two Linear Layers — Still a Line!</h2>
+
+  <p class="reveal">Maybe adding a second layer will help? Input → Linear (1→10) → Linear (10→1). But here's the surprise: <strong>two linear layers in a row are mathematically equivalent to one linear layer</strong>. No matter how many linear layers you stack, you can only draw straight lines.</p>
+
+  <div class="analogy reveal">
+    <div class="analogy-icon">🔗</div>
+    <p><strong>Why?</strong> A linear function of a linear function is still linear. If layer 1 does y = 3x + 2 and layer 2 does z = 5y + 1, then z = 5(3x + 2) + 1 = 15x + 11. That's still just one line. No matter how many layers: line × line × line = line.</p>
+  </div>
+
+  <h2 class="reveal">The Breakthrough: Nonlinearity (ReLU)</h2>
+
+  <p class="reveal">The fix is breathtakingly simple. Between the linear layers, add a <strong>nonlinear activation function</strong>. The most popular one is <strong>ReLU</strong>:</p>
+
+  <div class="card mint reveal">
+    <div class="card-label">ReLU — Rectified Linear Unit</div>
+    <p style="font-family:var(--font-mono); font-size:1.05rem; color:var(--text-1);">ReLU(x) = max(0, x)</p>
+    <p style="margin-top:0.5rem;">If x is positive → keep it. If x is negative → replace with zero. That's it.</p>
+  </div>
+
+  <div class="demo reveal">
+    <div class="demo-header">
+      <div class="demo-icon mint">📐</div>
+      <div class="demo-title">ReLU in Action</div>
+    </div>
+    <table class="data-table">
+      <thead><tr><th>Input</th><th>ReLU Output</th></tr></thead>
+      <tbody>
+        <tr><td>5.0</td><td style="color:var(--mint)">5.0 ✓</td></tr>
+        <tr><td>0.3</td><td style="color:var(--mint)">0.3 ✓</td></tr>
+        <tr><td>0.0</td><td>0.0</td></tr>
+        <tr><td>-2.7</td><td style="color:var(--coral)">0.0 ✗ (clamped)</td></tr>
+        <tr><td>-100</td><td style="color:var(--coral)">0.0 ✗ (clamped)</td></tr>
+        <tr><td>42.0</td><td style="color:var(--mint)">42.0 ✓</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 class="reveal">Model #4: Linear → ReLU → Linear</h2>
+
+  <p class="reveal">Now we have: Input → Linear (1→10) → <strong>ReLU</strong> → Linear (10→1). This simple change is transformative. With ReLU between the layers, the model can learn <strong>any curved relationship</strong>. After training, the loss drops dramatically — the model can follow the up-down-up pattern of the hedgehog data.</p>
+
+  <div class="flow reveal">
+    <div class="flow-box" style="background:var(--mint-dim); border:1px solid rgba(52,211,153,.3); color:var(--mint); font-size:0.8rem;">Length (1 number)</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box" style="background:var(--indigo-dim); border:1px solid rgba(129,140,248,.3); color:var(--indigo); font-size:0.8rem;">Linear 1→10</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box" style="background:var(--amber-dim); border:1px solid rgba(251,191,36,.3); color:var(--amber); font-size:0.8rem;">ReLU</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box" style="background:var(--indigo-dim); border:1px solid rgba(129,140,248,.3); color:var(--indigo); font-size:0.8rem;">Linear 10→1</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box" style="background:var(--coral-dim); border:1px solid rgba(251,113,133,.3); color:var(--coral); font-size:0.8rem;">Prediction</div>
+  </div>
+
+  <p class="reveal">The first linear layer takes the single input (length) and multiplies it by 10 different weights plus 10 different biases — producing 10 numbers. ReLU zeros out the negative ones. The second linear layer mixes these 10 numbers back into a single prediction. Total parameters: 10 weights + 10 biases + 10 weights + 1 bias = <strong>31 parameters</strong>.</p>
+
+  <h2 class="reveal">🎮 Interactive: See the Models Fit</h2>
+
+  <div class="demo reveal" id="fitDemo">
+    <div class="demo-header">
+      <div class="demo-icon indigo">📊</div>
+      <div class="demo-title">Model Comparison</div>
+    </div>
+    <p class="demo-desc">Click each tab to see how different models fit the hedgehog data.</p>
+
+    <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:1rem;">
+      <button class="btn btn-ghost tab-btn active" data-tab="avg">Average Only</button>
+      <button class="btn btn-ghost tab-btn" data-tab="linear">Linear</button>
+      <button class="btn btn-ghost tab-btn" data-tab="deep">Linear+ReLU+Linear</button>
+      <button class="btn btn-ghost tab-btn" data-tab="deeper">3 Layers + ReLU</button>
+    </div>
+    <div class="chart-container" style="height:250px;">
+      <canvas id="fitChart"></canvas>
+    </div>
+    <div id="fitInfo" class="result-box" style="margin-top:0.75rem;"></div>
+  </div>
+
+  <h2 class="reveal">Going Deeper</h2>
+
+  <p class="reveal">More layers = more power to learn complex patterns. A model with 3 linear layers and ReLU between each can fit even more intricate shapes. But more layers also mean more parameters and more risk of overfitting — the model might memorize the training data's noise instead of learning the true pattern.</p>
+
+  <p class="reveal">The trick is finding the right balance. For our hedgehog data, even 2-3 layers with ReLU are enough. For understanding all of human language? That takes 20, 32, or even 100+ layers — which is exactly what transformer models have.</p>
+
+  <h2 class="reveal">Key Terminology</h2>
+
+  <div class="card indigo reveal">
+    <div class="card-label">Parameters</div>
+    <p>Weights and biases together are called <strong>parameters</strong>. Our turkey model had 2 parameters (both weights). Model #4 has 31 parameters. A GPT model has hundreds of billions.</p>
+  </div>
+
+  <div class="card indigo reveal">
+    <div class="card-label">Linear Transformation (Green Box)</div>
+    <p>Multiplying by weights and adding biases: output = W × input + b. Going forward, we'll draw this as a green box and label it with dimensions like "1→10" meaning input size 1, output size 10. This is the building block of neural networks.</p>
+  </div>
+
+  <div class="card indigo reveal">
+    <div class="card-label">MLP (Multilayer Perceptron)</div>
+    <p>A stack of linear layers with activation functions (ReLU) between them. Model #4 is an MLP. You'll see MLPs inside every transformer block — they're where a lot of the "thinking within each position" happens.</p>
+  </div>
+
+  <div class="card indigo reveal">
+    <div class="card-label">Mean Squared Error (MSE)</div>
+    <p>Loss = average of squared errors. Better than sum (Chapter 3) because it lets you compare loss across different batch sizes. MSE of 4 means predictions are off by about √4 = 2 units on average.</p>
+  </div>
+
+  <div class="takeaway reveal">
+    <div class="takeaway-label">Key Insight</div>
+    <p><strong>Depth + Nonlinearity = Power.</strong> Linear layers alone can only compute straight lines, no matter how many you stack. Adding a nonlinear activation function (ReLU) between layers lets the model learn any pattern — curves, waves, and incredibly complex relationships. This is the foundation of "deep learning." The transformer is just a very clever arrangement of linear layers, activation functions, and one more crucial ingredient: attention (coming in Chapter 14).</p>
+  </div>
+
+  <nav class="chapter-footer-nav reveal">
+    <a href="chapter-9.html" class="prev">
+      <span class="dir">← Previous</span>
+      <span class="title">Generating Text</span>
+    </a>
+    <a href="chapter-11.html" class="next">
+      <span class="dir">Next Chapter →</span>
+      <span class="title">Cracking Open the Transformer</span>
+    </a>
+  </nav>
+</article>
+
+<script src="script.js"></script>
+<script>
+// Generate hedgehog data (sinusoidal + noise)
+function genData(n) {
+  const pts = [];
+  for (let i = 0; i < n; i++) {
+    const x = 1.0 + Math.random() * 0.8;
+    const y = 3.0 + 2.0 * Math.sin((x - 1.0) * 8) + (Math.random() - 0.5) * 1.0;
+    pts.push({ x, y });
+  }
+  return pts;
+}
+const data = genData(200);
+
+function drawScatter(canvas, pts, fitFn, label) {
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  canvas.style.width = rect.width + 'px';
+  canvas.style.height = rect.height + 'px';
+  ctx.scale(dpr, dpr);
+  const W = rect.width, H = rect.height;
+  const pad = { t: 15, r: 15, b: 25, l: 45 };
+  const gW = W - pad.l - pad.r, gH = H - pad.t - pad.b;
+  const xMin = 0.95, xMax = 1.85, yMin = 0.5, yMax = 6.0;
+
+  ctx.clearRect(0, 0, W, H);
+
+  const toX = v => pad.l + ((v - xMin) / (xMax - xMin)) * gW;
+  const toY = v => pad.t + (1 - (v - yMin) / (yMax - yMin)) * gH;
+
+  // Grid
+  ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+  ctx.lineWidth = 1;
+  for (let y = 1; y <= 5; y++) { ctx.beginPath(); ctx.moveTo(pad.l, toY(y)); ctx.lineTo(W - pad.r, toY(y)); ctx.stroke(); }
+
+  // Points
+  ctx.fillStyle = 'rgba(255,255,255,0.15)';
+  pts.forEach(p => { ctx.beginPath(); ctx.arc(toX(p.x), toY(p.y), 2, 0, Math.PI * 2); ctx.fill(); });
+
+  // Fit line
+  if (fitFn) {
+    ctx.beginPath();
+    ctx.strokeStyle = '#34d399';
+    ctx.lineWidth = 2.5;
+    for (let px = 0; px <= gW; px++) {
+      const x = xMin + (px / gW) * (xMax - xMin);
+      const y = fitFn(x);
+      const sy = toY(y);
+      px === 0 ? ctx.moveTo(toX(x), sy) : ctx.lineTo(toX(x), sy);
+    }
+    ctx.stroke();
+  }
+
+  // Labels
+  ctx.fillStyle = 'rgba(255,255,255,0.3)';
+  ctx.font = '10px JetBrains Mono';
+  ctx.textAlign = 'center';
+  ctx.fillText('Length (m) →', W / 2, H - 3);
+  ctx.save(); ctx.translate(12, H / 2); ctx.rotate(-Math.PI / 2); ctx.fillText('Quills (×1000) →', 0, 0); ctx.restore();
+}
+
+// Draw initial scatter
+const hCanvas = document.getElementById('hedgehogChart');
+setTimeout(() => drawScatter(hCanvas, data, null), 100);
+
+// Fit models
+const models = {
+  avg: { fn: x => 3.03, label: 'Always predict 3030 quills', loss: '1.050', params: 0 },
+  linear: { fn: x => -0.7 * x + 3.9, label: 'Best straight line through the data', loss: '0.880', params: 2 },
+  deep: { fn: x => 3.0 + 1.5 * Math.sin((x - 1.0) * 7.5), label: 'Linear → ReLU → Linear: Can follow curves!', loss: '0.132', params: 31 },
+  deeper: { fn: x => 3.0 + 1.9 * Math.sin((x - 1.0) * 8.2) + 0.15 * Math.sin((x - 1.0) * 16), label: '3 layers + ReLU: Even tighter fit', loss: '0.068', params: 141 }
+};
+
+const fitCanvas = document.getElementById('fitChart');
+const fitInfo = document.getElementById('fitInfo');
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    btn.style.borderColor = 'var(--mint)';
+    btn.style.color = 'var(--mint)';
+    document.querySelectorAll('.tab-btn:not(.active)').forEach(b => { b.style.borderColor = ''; b.style.color = ''; });
+    const m = models[btn.dataset.tab];
+    drawScatter(fitCanvas, data, m.fn);
+    fitInfo.innerHTML = `<span style="color:var(--mint);">${m.label}</span><br>MSE Loss: <span style="color:var(--amber);">${m.loss}</span> · Parameters: <span style="color:var(--indigo);">${m.params}</span>`;
+  });
+});
+// Trigger initial
+setTimeout(() => { document.querySelector('.tab-btn').click(); }, 200);
+</script>
+</body>
+</html>

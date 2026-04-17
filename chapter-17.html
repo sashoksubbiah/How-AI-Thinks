@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 17: KV Cache — How AI Thinks</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav class="site-nav">
+  <div class="nav-brand">How <em>AI</em> Thinks</div>
+  <div class="nav-progress-track"><div class="nav-progress-fill"></div></div>
+  <div class="nav-links">
+    <a href="chapter-16.html">← Prev</a>
+    <a href="index.html">Contents</a>
+    <a href="chapter-18.html">Next →</a>
+  </div>
+</nav>
+
+<article class="chapter-page prose">
+  <header class="chapter-header reveal">
+    <div class="chapter-label">Chapter 17</div>
+    <h1 class="chapter-title">KV Cache</h1>
+    <p class="chapter-subtitle">Why generating text is wastefully slow without caching — and the elegant trick that fixes it by trading memory for speed.</p>
+  </header>
+
+  <h2 class="reveal">How Many Operations Does It Take?</h2>
+
+  <p class="reveal">Let's count the floating-point operations (FLOPs) needed to generate a response to "Please tell me about Paris." The prompt is 5 tokens; the completion might be 20 tokens. For our 20-layer model, each next-token prediction requires roughly <strong>5 billion FLOPs</strong> just for the matrix multiplications.</p>
+
+  <div class="demo reveal">
+    <div class="demo-header">
+      <div class="demo-icon coral">⏱️</div>
+      <div class="demo-title">How Long Would 277 Billion FLOPs Take?</div>
+    </div>
+    <table class="data-table">
+      <thead><tr><th>Computer</th><th>Speed</th><th>Time for 20 tokens</th></tr></thead>
+      <tbody>
+        <tr><td>Human with paper</td><td>~0.08 FLOP/s</td><td style="color:var(--coral)">~6 million years</td></tr>
+        <tr><td>Apple IIe (1983)</td><td>~18 FLOP/s</td><td style="color:var(--coral)">~500 years</td></tr>
+        <tr><td>MacBook Air M1 (2020)</td><td>~2B FLOP/s</td><td style="color:var(--amber)">~2–3 minutes</td></tr>
+        <tr><td>NVIDIA H100 GPU</td><td>~2000T FLOP/s</td><td style="color:var(--mint)">< 1 second</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:0.82rem; color:var(--text-3);">The H100 achieves nearly 2,000 trillion operations per second through massive parallelism. This is why GPUs are essential for AI.</p>
+  </div>
+
+  <h2 class="reveal">The Waste Problem</h2>
+
+  <p class="reveal">Here's the issue with the generation loop from Chapter 9. To generate token 7, we feed in all 7 tokens (prompt + 2 generated). The model processes <strong>all 7 tokens</strong> through all 20 layers. But we only use the prediction from the <strong>last</strong> position! The first 6 positions were already computed when generating tokens 5 and 6 — that work is completely wasted.</p>
+
+  <div class="math-block reveal">
+    <div class="math-title">FLOP Count Without KV Cache (20-token completion)</div>
+    <div class="math-step">
+      <div class="step-num">1</div>
+      <div class="step-content">Token 6: process 6 tokens → <span class="hl">~5.0B</span> FLOPs</div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">2</div>
+      <div class="step-content">Token 7: process 7 tokens → <span class="hl">~5.7B</span> FLOPs</div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">3</div>
+      <div class="step-content">Token 8: process 8 tokens → <span class="hl">~6.3B</span> FLOPs</div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">...</div>
+      <div class="step-content">Each step recomputes everything from scratch</div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">Σ</div>
+      <div class="step-content">Total: ~<span class="result">277 billion</span> FLOPs for 20 tokens</div>
+    </div>
+  </div>
+
+  <h2 class="reveal">The KV Cache Solution</h2>
+
+  <p class="reveal">The insight: inside the attention mechanism, each position computes <strong>Key</strong> and <strong>Value</strong> vectors. These don't change when we add a new token to the end — position 3's Key and Value are the same regardless of whether the sequence has 5 tokens or 50 tokens (thanks to causal masking, position 3 can't see anything after itself).</p>
+
+  <div class="card mint reveal">
+    <div class="card-label">The KV Cache Trick</div>
+    <p><strong>Store the K and V vectors from all previous tokens.</strong> When generating the next token, only compute Q, K, V for the new token. Use the cached K and V from all previous positions for the attention calculation. This means we process <strong>one token</strong> through the network instead of the entire sequence.</p>
+  </div>
+
+  <div class="math-block reveal">
+    <div class="math-title">FLOP Count WITH KV Cache</div>
+    <div class="math-step">
+      <div class="step-num">1</div>
+      <div class="step-content">First pass (prompt): process 5 tokens normally → ~5.0B FLOPs (cache K,V)</div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">2</div>
+      <div class="step-content">Token 6: process 1 token only → <span class="mint">~1.0B</span> FLOPs</div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">3</div>
+      <div class="step-content">Token 7: process 1 token only → <span class="mint">~1.0B</span> FLOPs</div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">...</div>
+      <div class="step-content">Each subsequent token: ~1B FLOPs (not growing!)</div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">Σ</div>
+      <div class="step-content">Total: ~5B + 20 × 1B = ~<span class="result">25 billion</span> FLOPs</div>
+    </div>
+  </div>
+
+  <p class="reveal">That's roughly <strong>11× fewer FLOPs</strong> for a 20-token completion. For longer completions (100+ tokens), the savings are even more dramatic — potentially 50× or more.</p>
+
+  <h2 class="reveal">The Trade-Off: Memory</h2>
+
+  <p class="reveal">The KV cache saves compute but costs <strong>memory</strong>. For each token in the sequence, across all layers and all heads, we need to store the K and V vectors. For our 20-layer model with D=1280:</p>
+
+  <div class="math-block reveal">
+    <div class="math-title">KV Cache Memory Per Token</div>
+    <div class="math-step">
+      <div class="step-num">1</div>
+      <div class="step-content">K and V vectors: 2 × D = 2 × 1280 = 2560 numbers per layer</div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">2</div>
+      <div class="step-content">Across 20 layers: 2560 × 20 = 51,200 numbers per token</div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">3</div>
+      <div class="step-content">At 2 bytes each (BF16): 51,200 × 2 = <span class="hl">~100 KB per token</span></div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">!</div>
+      <div class="step-content">For a 2048-token sequence: ~200 MB. For 8 parallel users: ~1.6 GB</div>
+    </div>
+  </div>
+
+  <p class="reveal">This memory trade-off is manageable — GPUs have 40–80 GB of memory. The compute savings are well worth it, especially when serving millions of users.</p>
+
+  <h2 class="reveal">🎮 Interactive: KV Cache Savings</h2>
+
+  <div class="demo reveal" id="kvDemo">
+    <div class="demo-header">
+      <div class="demo-icon mint">💾</div>
+      <div class="demo-title">KV Cache Savings Calculator</div>
+    </div>
+    <p class="demo-desc">Adjust the completion length to see how much compute the KV cache saves.</p>
+
+    <div class="slider-row">
+      <span class="slider-label" style="min-width:80px;">Prompt</span>
+      <input type="range" id="promptLen" min="5" max="500" value="50" step="5">
+      <span class="slider-val" id="promptLenV">50 tokens</span>
+    </div>
+    <div class="slider-row">
+      <span class="slider-label" style="min-width:80px;">Completion</span>
+      <input type="range" id="compLen" min="10" max="2000" value="200" step="10">
+      <span class="slider-val" id="compLenV">200 tokens</span>
+    </div>
+
+    <div class="result-box" id="kvResult" style="margin-top:1rem;"></div>
+  </div>
+
+  <div class="takeaway reveal">
+    <div class="takeaway-label">Key Insight</div>
+    <p><strong>The KV Cache trades memory for speed.</strong> By storing the Key and Value vectors from all previously processed tokens, each new token only needs to be processed once through the network — instead of reprocessing the entire growing sequence. This makes text generation dramatically faster (10–100×) and is essential for serving AI models to millions of users in real-time.</p>
+    <p style="margin-top:0.5rem;">With this, you understand the complete model architecture — from token input to probability output, including how to train it efficiently and generate from it quickly. Now it's time to train for real.</p>
+  </div>
+
+  <nav class="chapter-footer-nav reveal">
+    <a href="chapter-16.html" class="prev">
+      <span class="dir">← Previous</span>
+      <span class="title">The Whole Model</span>
+    </a>
+    <a href="chapter-18.html" class="next">
+      <span class="dir">Next Chapter →</span>
+      <span class="title">How Will We Know If the Model Works?</span>
+    </a>
+  </nav>
+</article>
+
+<script src="script.js"></script>
+<script>
+function updateKV() {
+  const P = +document.getElementById('promptLen').value;
+  const C = +document.getElementById('compLen').value;
+  document.getElementById('promptLenV').textContent = P + ' tokens';
+  document.getElementById('compLenV').textContent = C + ' tokens';
+
+  // Simplified FLOP model: FLOPs ≈ proportional to sequence length × constant
+  const flopsPerToken = 1; // relative unit
+  // Without cache: sum of (P+1) + (P+2) + ... + (P+C) tokens processed
+  let noCacheFLOPs = 0;
+  for (let i = 0; i < C; i++) noCacheFLOPs += (P + i + 1);
+  // With cache: P (initial) + C × 1 (one token each)
+  const cacheFLOPs = P + C;
+  const speedup = (noCacheFLOPs / cacheFLOPs).toFixed(1);
+  const savings = ((1 - cacheFLOPs / noCacheFLOPs) * 100).toFixed(1);
+  const cacheMemKB = ((P + C) * 100 / 1024).toFixed(1);
+
+  document.getElementById('kvResult').innerHTML = `
+    <div style="display:grid; grid-template-columns:1fr auto; gap:0.3rem 1.5rem; font-size:0.88rem;">
+      <span>Without KV cache (relative FLOPs):</span><span style="color:var(--coral)">${noCacheFLOPs.toLocaleString()}</span>
+      <span>With KV cache (relative FLOPs):</span><span style="color:var(--mint)">${cacheFLOPs.toLocaleString()}</span>
+      <span>Speedup:</span><span style="color:var(--amber); font-weight:700; font-size:1.1rem;">${speedup}×</span>
+      <span>Compute saved:</span><span style="color:var(--mint)">${savings}%</span>
+      <span>Cache memory (approximate):</span><span style="color:var(--text-3)">${cacheMemKB} MB</span>
+    </div>
+  `;
+}
+document.querySelectorAll('#kvDemo input').forEach(el => el.addEventListener('input', updateKV));
+updateKV();
+</script>
+</body>
+</html>
