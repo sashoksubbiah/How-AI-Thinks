@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 3: Training a Model — How AI Thinks</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav class="site-nav">
+  <div class="nav-brand">How <em>AI</em> Thinks</div>
+  <div class="nav-progress-track"><div class="nav-progress-fill"></div></div>
+  <div class="nav-links">
+    <a href="chapter-2.html">← Prev</a>
+    <a href="index.html">Contents</a>
+    <a href="chapter-4.html">Next →</a>
+  </div>
+</nav>
+
+<article class="chapter-page prose">
+  <header class="chapter-header reveal">
+    <div class="chapter-label">Chapter 03</div>
+    <h1 class="chapter-title">Training a Model: Predicting Feathers</h1>
+    <p class="chapter-subtitle">Building a prediction machine, measuring how wrong it is, and using calculus to make it better — all with real numbers.</p>
+  </header>
+
+  <p class="reveal">In Chapter 2 we talked about models for predicting words. Now we're going to build a model to predict something simpler: <strong>the number of feathers on a turkey</strong>. Don't ask — the point is to keep the numbers small enough that we can follow every calculation. You'll have to trust that these same ideas scale all the way up to predicting words in language models with billions of parameters.</p>
+
+  <h2 class="reveal">The Setup</h2>
+
+  <p class="reveal">Think of our model as a machine. It takes two inputs — the <strong>height</strong> and <strong>length</strong> of a turkey — and gives one output: its prediction for the number of feathers.</p>
+
+  <div class="flow reveal">
+    <div class="flow-box" style="background:var(--mint-dim); border:1px solid rgba(52,211,153,0.3); color:var(--mint);">Height</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box" style="background:var(--indigo-dim); border:1px solid rgba(129,140,248,0.3); color:var(--indigo);">🧠 Model</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box" style="background:var(--amber-dim); border:1px solid rgba(251,191,36,0.3); color:var(--amber);">Predicted Feathers</div>
+    <div class="flow-arrow">←</div>
+    <div class="flow-box" style="background:var(--mint-dim); border:1px solid rgba(52,211,153,0.3); color:var(--mint);">Length</div>
+  </div>
+
+  <p class="reveal">The model's formula is simple: multiply the height by some number (call it <strong>w₁</strong>), multiply the length by another number (<strong>w₂</strong>), and add them together:</p>
+
+  <div class="card mint reveal">
+    <p style="font-family:var(--font-mono); font-size:1.05rem; color:var(--text-1); text-align:center; margin:0;">Prediction = height × w₁ + length × w₂</p>
+  </div>
+
+  <p class="reveal">The numbers w₁ and w₂ are called <strong>weights</strong> — they're the knobs we can turn to make our model better or worse. Our data comes from three turkeys:</p>
+
+  <div class="demo reveal">
+    <table class="data-table">
+      <thead><tr><th>Turkey</th><th>Height (m)</th><th>Length (m)</th><th>Actual Feathers</th></tr></thead>
+      <tbody>
+        <tr><td>#1</td><td>1.00</td><td>1.50</td><td>5,000</td></tr>
+        <tr><td>#2</td><td>0.75</td><td>1.25</td><td>3,500</td></tr>
+        <tr><td>#3</td><td>1.25</td><td>1.00</td><td>4,500</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:0.82rem; color:var(--text-3);">This data is made up for this example — not from real turkeys!</p>
+  </div>
+
+  <p class="reveal">If our model is any good, then plugging in the heights and lengths should give predictions close to the actual feather counts.</p>
+
+  <h2 class="reveal">Step 1: Start with Random Weights</h2>
+
+  <p class="reveal">Let's just pick some numbers: <strong>w₁ = 1000</strong> and <strong>w₂ = 3000</strong>. Now calculate predictions for all three turkeys:</p>
+
+  <div class="math-block reveal">
+    <div class="math-title">Forward Pass — Computing Predictions</div>
+    <div class="math-step">
+      <div class="step-num">1</div>
+      <div class="step-content">Turkey #1: 1.00 × 1000 + 1.50 × 3000 = 1000 + 4500 = <span class="result">5,500</span></div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">2</div>
+      <div class="step-content">Turkey #2: 0.75 × 1000 + 1.25 × 3000 = 750 + 3750 = <span class="result">4,500</span></div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">3</div>
+      <div class="step-content">Turkey #3: 1.25 × 1000 + 1.00 × 3000 = 1250 + 3000 = <span class="result">4,250</span></div>
+    </div>
+  </div>
+
+  <p class="reveal">Not bad for random weights! Turkey #1 is predicted at 5,500 (actual: 5,000). But how do we turn "not bad" into a single number?</p>
+
+  <h2 class="reveal">Step 2: Compute the Error and Loss</h2>
+
+  <p class="reveal">For each turkey, <strong>error = prediction − actual</strong>. Positive means we overshot, negative means we undershot:</p>
+
+  <div class="math-block reveal">
+    <div class="math-title">Error Calculation</div>
+    <div class="math-step">
+      <div class="step-num">1</div>
+      <div class="step-content">Turkey #1: 5,500 − 5,000 = <span class="hl">+500</span> (overshot by 500)</div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">2</div>
+      <div class="step-content">Turkey #2: 4,500 − 3,500 = <span class="hl">+1,000</span> (overshot by 1000)</div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">3</div>
+      <div class="step-content">Turkey #3: 4,250 − 4,500 = <span class="hl">−250</span> (undershot by 250)</div>
+    </div>
+  </div>
+
+  <p class="reveal">We want a single number that tells us how bad our overall prediction is. If we just add the errors, a big positive and a big negative could cancel out to zero even though both predictions are terrible. Solution: <strong>square each error</strong> first (which makes negatives positive and penalizes big errors more), then add them up. This sum is called the <strong>loss</strong>.</p>
+
+  <div class="math-block reveal">
+    <div class="math-title">Loss Calculation</div>
+    <div class="math-step">
+      <div class="step-num">1</div>
+      <div class="step-content">Squared error #1: 500² = 500 × 500 = <span class="hl">250,000</span></div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">2</div>
+      <div class="step-content">Squared error #2: 1000² = 1000 × 1000 = <span class="hl">1,000,000</span></div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">3</div>
+      <div class="step-content">Squared error #3: (−250)² = 250 × 250 = <span class="hl">62,500</span></div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">Σ</div>
+      <div class="step-content"><strong>Loss</strong> = 250,000 + 1,000,000 + 62,500 = <span class="result">1,312,500</span></div>
+    </div>
+  </div>
+
+  <div class="takeaway reveal">
+    <div class="takeaway-label">Why Loss Matters</div>
+    <p>Loss is a single number that says "how wrong is our model overall?" A loss of zero means perfect predictions. The entire goal of training is to make this number as small as possible. If we tweak our weights and the loss goes down — good. If it goes up — we moved in the wrong direction.</p>
+  </div>
+
+  <h2 class="reveal">Step 3: Which Direction to Nudge?</h2>
+
+  <p class="reveal">We could guess new weights randomly, but it would be nice to know: if we increase w₁ a little bit, will the loss go up (bad) or down (good)? This is where <strong>derivatives</strong> from calculus come in.</p>
+
+  <div class="analogy reveal">
+    <div class="analogy-icon">🏔️</div>
+    <p><strong>Analogy:</strong> Imagine you're blindfolded on a hillside and want to reach the lowest point. You can't see, but you can feel which direction the ground slopes beneath your feet. If it slopes down to the left, take a step left. The derivative tells us the slope — it tells us which direction is "downhill" for our loss.</p>
+  </div>
+
+  <p class="reveal">Remember from high school: if f(x) = x², the derivative is 2x. At x = 3, the derivative is 6, meaning a tiny increase in x causes f(x) to increase by about 6 times that amount. We use the same idea for our loss — except we compute <strong>partial derivatives</strong>, one for each weight.</p>
+
+  <div class="math-block reveal">
+    <div class="math-title">Partial Derivatives of Loss</div>
+    <div class="math-step">
+      <div class="step-num">w₁</div>
+      <div class="step-content">∂loss/∂w₁ at (w₁=1000, w₂=3000) = <span class="result">1,875</span><br><span style="color:var(--text-3); font-size:0.82rem;">Positive → increasing w₁ increases loss → we should <strong>decrease</strong> w₁</span></div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">w₂</div>
+      <div class="step-content">∂loss/∂w₂ at (w₁=1000, w₂=3000) = <span class="result">3,500</span><br><span style="color:var(--text-3); font-size:0.82rem;">Positive → increasing w₂ increases loss → we should <strong>decrease</strong> w₂</span></div>
+    </div>
+  </div>
+
+  <h2 class="reveal">Step 4: Update the Weights</h2>
+
+  <p class="reveal">We know which direction to move each weight. But by how much? Too little and we barely improve. Too much and we might overshoot. We use a <strong>learning rate</strong> (let's set it to 0.01) that controls the step size:</p>
+
+  <div class="math-block reveal">
+    <div class="math-title">Weight Update</div>
+    <div class="math-step">
+      <div class="step-num">1</div>
+      <div class="step-content">New w₁ = 1000 − (0.01 × 1,875) = 1000 − 18.75 = <span class="result">981.25</span></div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">2</div>
+      <div class="step-content">New w₂ = 3000 − (0.01 × 3,500) = 3000 − 35.00 = <span class="result">2,965</span></div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">✓</div>
+      <div class="step-content">New loss with these weights: <span class="result">1,190,625</span> — down from 1,312,500!</div>
+    </div>
+  </div>
+
+  <p class="reveal">It worked! The loss went down. Now we <strong>repeat</strong> — compute new partial derivatives at the new weights, update again, and keep going. This process of repeatedly computing gradients and nudging weights is called <strong>gradient descent</strong>.</p>
+
+  <h2 class="reveal">After 1,000 Steps</h2>
+
+  <p class="reveal">After repeating this process 1,000 times, our weights converge to approximately <strong>w₁ ≈ 2,311</strong> and <strong>w₂ ≈ 1,633</strong>, with a loss of about <strong>133,190</strong>. Much better than the 1,312,500 we started with!</p>
+
+  <div class="demo reveal">
+    <table class="data-table">
+      <thead><tr><th>Step</th><th>w₁</th><th>w₂</th><th>Loss</th></tr></thead>
+      <tbody>
+        <tr><td>0</td><td>1,000</td><td>3,000</td><td style="color:var(--coral)">1,312,500</td></tr>
+        <tr><td>1</td><td>981</td><td>2,965</td><td>1,190,625</td></tr>
+        <tr><td>2</td><td>964</td><td>2,933</td><td>1,085,439</td></tr>
+        <tr><td>10</td><td>851</td><td>2,719</td><td>598,817</td></tr>
+        <tr><td>50</td><td>737</td><td>2,271</td><td>188,163</td></tr>
+        <tr><td>100</td><td>1,002</td><td>2,016</td><td>143,449</td></tr>
+        <tr><td>500</td><td>2,211</td><td>1,699</td><td>133,351</td></tr>
+        <tr><td>1,000</td><td style="color:var(--mint)">2,311</td><td style="color:var(--mint)">1,633</td><td style="color:var(--mint)">133,190</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:0.82rem; color:var(--text-3);">Notice w₁ goes down initially then back up — the gradient descent path isn't always a straight line to the optimum. It's like walking downhill on uneven terrain.</p>
+  </div>
+
+  <p class="reveal">With these final weights, our predictions are: Turkey #1: 4,760 (actual 5,000, off by 240), Turkey #2: 3,775 (actual 3,500, off by 275), Turkey #3: 4,522 (actual 4,500, off by 22). Not perfect — but with only 2 weights and 3 data points, we can't expect perfection.</p>
+
+  <p class="reveal">For the curious: the mathematically optimal weights are w₁ ≈ 2,347 and w₂ ≈ 1,604. We got close! A smaller learning rate and more steps would get us even closer.</p>
+
+  <h2 class="reveal">🎮 Interactive: Train Your Own Model</h2>
+
+  <div class="demo reveal" id="trainDemo">
+    <div class="demo-header">
+      <div class="demo-icon indigo">⚙️</div>
+      <div class="demo-title">Weight Training Simulator</div>
+    </div>
+    <p class="demo-desc">Adjust the weights manually or click Auto-Train to watch gradient descent in action.</p>
+
+    <div class="slider-row">
+      <span class="slider-label">w₁</span>
+      <input type="range" id="w1" min="0" max="5000" value="1000" step="10">
+      <span class="slider-val" id="w1v">1000</span>
+    </div>
+    <div class="slider-row">
+      <span class="slider-label">w₂</span>
+      <input type="range" id="w2" min="0" max="5000" value="3000" step="10">
+      <span class="slider-val" id="w2v">3000</span>
+    </div>
+
+    <div class="result-box" id="trainResult">
+      <div id="preds"></div>
+      <div style="margin-top:0.5rem; padding-top:0.5rem; border-top:1px solid var(--border-subtle);">
+        Total Loss: <span id="lossOut" style="color:var(--amber); font-weight:600;"></span>
+      </div>
+    </div>
+
+    <div style="margin-top:1rem; display:flex; gap:0.5rem; flex-wrap:wrap;">
+      <button class="btn btn-mint" id="autoBtn">▶ Auto-Train 200 Steps</button>
+      <button class="btn btn-ghost" id="resetBtn">↺ Reset</button>
+    </div>
+    <div id="trainLog" style="font-family:var(--font-mono); font-size:0.72rem; color:var(--text-4); margin-top:0.5rem; max-height:80px; overflow-y:auto;"></div>
+
+    <!-- Loss chart -->
+    <div class="chart-container" style="margin-top:1.25rem; height:180px;">
+      <canvas id="lossChart"></canvas>
+    </div>
+  </div>
+
+  <div class="takeaway reveal">
+    <div class="takeaway-label">The Training Loop</div>
+    <p>This is the core idea behind training <strong>every</strong> modern AI model:<br>
+    ① Start with random weights → ② Compute predictions (forward pass) → ③ Calculate loss → ④ Compute gradients (how much each weight affects the loss) → ⑤ Update weights using gradient × learning rate → ⑥ Repeat millions of times.<br><br>
+    Our turkey model has 2 weights. ChatGPT has <strong>hundreds of billions</strong>. The process is identical — just way more weights, way more data, and way more steps.</p>
+  </div>
+
+  <nav class="chapter-footer-nav reveal">
+    <a href="chapter-2.html" class="prev">
+      <span class="dir">← Previous</span>
+      <span class="title">Predicting the Next Word</span>
+    </a>
+    <a href="chapter-4.html" class="next">
+      <span class="dir">Next Chapter →</span>
+      <span class="title">Backpropagation</span>
+    </a>
+  </nav>
+</article>
+
+<script src="script.js"></script>
+<script>
+const turkeys = [
+  { h:1.00, l:1.50, actual:5000 },
+  { h:0.75, l:1.25, actual:3500 },
+  { h:1.25, l:1.00, actual:4500 }
+];
+const w1El = document.getElementById('w1'), w2El = document.getElementById('w2');
+const w1v = document.getElementById('w1v'), w2v = document.getElementById('w2v');
+const predsEl = document.getElementById('preds'), lossEl = document.getElementById('lossOut');
+const logEl = document.getElementById('trainLog');
+let lossHistory = [];
+
+function update() {
+  const w1 = +w1El.value, w2 = +w2El.value;
+  w1v.textContent = w1; w2v.textContent = w2;
+  let totalLoss = 0;
+  let html = '';
+  turkeys.forEach((t,i) => {
+    const pred = t.h*w1 + t.l*w2;
+    const err = pred - t.actual;
+    totalLoss += err*err;
+    const errColor = Math.abs(err) < 300 ? 'var(--mint)' : 'var(--coral)';
+    html += `Turkey #${i+1}: <span style="color:var(--mint)">${Math.round(pred)}</span> (error: <span style="color:${errColor}">${Math.round(err) > 0 ? '+' : ''}${Math.round(err)}</span>)  `;
+  });
+  predsEl.innerHTML = html;
+  lossEl.textContent = Math.round(totalLoss).toLocaleString();
+}
+w1El.oninput = update; w2El.oninput = update; update();
+
+// Auto train
+document.getElementById('autoBtn').onclick = function() {
+  let w1 = +w1El.value, w2 = +w2El.value;
+  const lr = 0.01;
+  logEl.innerHTML = '';
+  lossHistory = [];
+  let step = 0;
+  const interval = setInterval(() => {
+    let dw1 = 0, dw2 = 0, loss = 0;
+    turkeys.forEach(t => {
+      const err = t.h*w1 + t.l*w2 - t.actual;
+      dw1 += 2*err*t.h; dw2 += 2*err*t.l;
+      loss += err*err;
+    });
+    w1 -= lr*dw1; w2 -= lr*dw2; step++;
+    lossHistory.push(loss);
+    if (step % 20 === 0 || step <= 5 || step === 200) {
+      logEl.innerHTML += `Step ${step}: w₁=${Math.round(w1)} w₂=${Math.round(w2)} loss=${Math.round(loss).toLocaleString()}\n`;
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+    w1El.value = Math.round(w1); w2El.value = Math.round(w2); update();
+    if (step >= 200) { clearInterval(interval); drawChart(); }
+  }, 20);
+};
+document.getElementById('resetBtn').onclick = function() {
+  w1El.value = 1000; w2El.value = 3000; update();
+  logEl.innerHTML = ''; lossHistory = [];
+  const ctx = document.getElementById('lossChart').getContext('2d');
+  ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);
+};
+
+// Simple loss chart
+function drawChart() {
+  const canvas = document.getElementById('lossChart');
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  canvas.style.width = rect.width + 'px';
+  canvas.style.height = rect.height + 'px';
+  ctx.scale(dpr, dpr);
+  const W = rect.width, H = rect.height;
+  const pad = {t:20,r:15,b:30,l:60};
+  const gW = W-pad.l-pad.r, gH = H-pad.t-pad.b;
+
+  ctx.clearRect(0,0,W,H);
+  if (lossHistory.length < 2) return;
+
+  const maxL = Math.max(...lossHistory);
+  const minL = Math.min(...lossHistory);
+
+  // Grid
+  ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.t + (gH/4)*i;
+    ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(W-pad.r,y); ctx.stroke();
+    const val = maxL - (maxL-minL)*(i/4);
+    ctx.fillStyle = 'rgba(255,255,255,0.25)';
+    ctx.font = '10px JetBrains Mono';
+    ctx.textAlign = 'right';
+    ctx.fillText(Math.round(val/1000)+'K', pad.l-8, y+3);
+  }
+
+  // Line
+  ctx.beginPath();
+  ctx.strokeStyle = '#34d399';
+  ctx.lineWidth = 2;
+  lossHistory.forEach((l,i) => {
+    const x = pad.l + (i/(lossHistory.length-1))*gW;
+    const y = pad.t + (1 - (l-minL)/(maxL-minL))*gH;
+    i === 0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+
+  // Labels
+  ctx.fillStyle = 'rgba(255,255,255,0.3)';
+  ctx.font = '10px JetBrains Mono';
+  ctx.textAlign = 'center';
+  ctx.fillText('Training Steps →', W/2, H-5);
+  ctx.fillText('Loss ↑', pad.l, pad.t-8);
+}
+</script>
+</body>
+</html>

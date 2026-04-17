@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 1: The Big Question — How AI Thinks</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav class="site-nav">
+  <div class="nav-brand">How <em>AI</em> Thinks</div>
+  <div class="nav-progress-track"><div class="nav-progress-fill"></div></div>
+  <div class="nav-links">
+    <a href="index.html">Contents</a>
+    <a href="chapter-2.html">Next →</a>
+  </div>
+</nav>
+
+<article class="chapter-page prose">
+  <header class="chapter-header reveal">
+    <div class="chapter-label">Chapter 01</div>
+    <h1 class="chapter-title">The Big Question</h1>
+    <p class="chapter-subtitle">How did computers suddenly learn to think — and what's actually happening under the hood?</p>
+  </header>
+
+  <p class="reveal">Computers never felt like magic. If you grew up playing games, using apps, or writing code, you always had some sense that everything a computer did could be traced down to tiny pieces of logic — ones and zeros, if-then rules, instructions on chips. Even the most amazing modern phones and cloud services aren't a mystery if you think about it long enough. They're just doing lots of simple things very fast.</p>
+
+  <p class="reveal">Then, completely defying our intuition for what computers were capable of, they could <strong>think</strong>. They could translate between languages. They could make sense of scientific articles intended only for human consumption. They could generate creative stories, draw pictures from descriptions, and hold conversations that felt eerily human. An alien intelligence landed on our planet — except we invented it.</p>
+
+  <p class="reveal">It was magic. Except we knew it was actually 1s and 0s and logic under the hood. Which left one screaming question:</p>
+
+  <div class="card mint reveal">
+    <p style="font-size:1.4rem; font-family:var(--font-display); color:var(--text-1); text-align:center; margin:0;"><strong>HOW DOES IT WORK?</strong></p>
+  </div>
+
+  <p class="reveal">This guide exists to answer that question. We're going to take apart the machinery behind ChatGPT, Claude, Gemini, DeepSeek, and every other large language model (LLM). Not with hand-waving or big abstract diagrams — but with <strong>actual numbers</strong>, <strong>step-by-step calculations</strong>, and <strong>interactive examples</strong> you can play with right here on the page.</p>
+
+  <h2 class="reveal">How We'll Learn: Examples First</h2>
+
+  <p class="reveal">The great physicist Richard Feynman had a scheme for understanding complicated things. When mathematicians came in with terrific theorems and started listing conditions, he'd build a concrete example in his head that fit all the conditions. Maybe a hairy green ball. When they finally stated the theorem, if it wasn't true for his hairy green ball, he'd say "False!" Feynman won the Nobel Prize in physics, so nobody needs to feel bad about using examples to understand things.</p>
+
+  <p class="reveal">This is exactly how we'll work. Instead of starting with abstract symbols and jumping to "the transformer architecture uses multi-head self-attention over contextualized embeddings" — we'll start with <strong>turkeys</strong>. And then <strong>hedgehogs</strong>. We'll predict feathers and quills with real numbers, see exactly what "training" and "loss" and "gradients" mean, and only then graduate to language models. The ideas are the same whether you're predicting feathers or the next word in a sentence.</p>
+
+  <h2 class="reveal">What You Need to Know</h2>
+
+  <p class="reveal">This guide is for people who want to understand the details. If you see a big-picture diagram and have no desire to know "yeah, but what actually goes in and out of that box?" — this isn't for you. But if you're curious about what's really happening, here's what I assume you bring:</p>
+
+  <div class="card-grid reveal">
+    <div class="grid-card">
+      <div class="gc-icon">✅</div>
+      <h4>You enjoyed math in school</h4>
+      <p>You know how to solve 3x = 6. You might vaguely remember a few concepts from calculus.</p>
+    </div>
+    <div class="grid-card">
+      <div class="gc-icon">✅</div>
+      <h4>You think logically</h4>
+      <p>You get that computers follow instructions and are good at doing many things fast.</p>
+    </div>
+    <div class="grid-card">
+      <div class="gc-icon">✅</div>
+      <h4>You're curious</h4>
+      <p>You want to know what's behind the magic, not just accept that it works.</p>
+    </div>
+    <div class="grid-card">
+      <div class="gc-icon">❌</div>
+      <h4>You DON'T need</h4>
+      <p>Any knowledge of AI, neural networks, transformers, or the math behind them. We start from zero.</p>
+    </div>
+  </div>
+
+  <p class="reveal">If you skim ahead and see intricate diagrams, matrix math, terms like "ReLU" and strange plots — don't worry. <strong>It's not too complicated.</strong> We go step by step. Every equation is explained with real numbers. Every concept gets a concrete example.</p>
+
+  <p class="reveal">On the other hand, if you live and breathe math, this guide might frustrate you. We'll sometimes take three paragraphs to explain something that could be expressed with a few symbols. That's intentional — we're optimizing for understanding, not compactness.</p>
+
+  <h2 class="reveal">The Roadmap</h2>
+
+  <p class="reveal">Here's what we'll cover across all 30 chapters, organized as a journey:</p>
+
+  <div class="card indigo reveal">
+    <div class="card-label">Part 1 · Chapters 1–5</div>
+    <p><strong>What are AI models? How do you train them?</strong></p>
+    <p>We'll start by predicting words with simple counting (bigrams), then build a model to predict turkey feathers. You'll learn what "weights," "loss," "gradient descent," and "backpropagation" actually mean — with every number shown. We'll organize our calculations with matrices and understand why GPUs matter.</p>
+  </div>
+
+  <div class="card coral reveal">
+    <div class="card-label">Part 2 · Chapters 6–9</div>
+    <p><strong>What does a GPT model do?</strong></p>
+    <p>We'll trace the history from machine translation to the transformer, learn how text gets converted to tokens (including Tamil!), understand exactly what the model predicts (probability distributions over all possible next tokens), and see how text generation works — including the role of temperature in creativity.</p>
+  </div>
+
+  <div class="card amber reveal">
+    <div class="card-label">Part 3 · Chapters 10–17</div>
+    <p><strong>What's inside a GPT model?</strong></p>
+    <p>We'll crack the transformer open. Starting with hedgehog quills to understand deep networks and nonlinearity, we'll then explore embeddings, attention (the heart of the transformer), multi-head attention, rotary position encodings, the MLP layers, skip connections, and the KV cache. By Chapter 16, you'll understand every single component and be able to count all ~560 million parameters.</p>
+  </div>
+
+  <div class="card cyan reveal">
+    <div class="card-label">Part 4 · Chapters 18–23</div>
+    <p><strong>How do we train at scale?</strong></p>
+    <p>Evaluation benchmarks, optimizers (SGD, Adam, Muon), RMS normalization, and distributing training across multiple GPUs. The practical engineering that makes billion-parameter models possible.</p>
+  </div>
+
+  <div class="card mint reveal">
+    <div class="card-label">Part 5 · Chapters 24–30</div>
+    <p><strong>The training journey.</strong></p>
+    <p>Base training on trillions of tokens. Mid-training on higher quality data. Teaching the model to use tools. Supervised fine-tuning with example conversations. Reinforcement learning to make it truly helpful. And finally — saying hello to our trained model for the first time. Plus a bonus chapter on floating point precision.</p>
+  </div>
+
+  <h2 class="reveal">A Note on "Thinking"</h2>
+
+  <p class="reveal">The title of this guide is "How AI Thinks." We're not trying to wade into the philosophical argument about what does and doesn't constitute thinking, or claim that large language models and human brains are equivalent. We're only reflecting that if we went back a decade, given what we knew computers to be capable of, the things they can now do would absolutely have appeared to be the product of human thought. Once you finish reading and know the mechanics of a GPT model, you can decide for yourself what label best fits their calculations.</p>
+
+  <div class="takeaway reveal">
+    <div class="takeaway-label">Ready?</div>
+    <p>In the next chapter, we'll start with the simplest possible language model — one that just counts how often words appear next to each other. It's the same idea that powers predictive text on your phone, and it's the ancestor of everything that came after. Let's go.</p>
+  </div>
+
+  <nav class="chapter-footer-nav reveal">
+    <a href="index.html" class="prev">
+      <span class="dir">← Back</span>
+      <span class="title">Table of Contents</span>
+    </a>
+    <a href="chapter-2.html" class="next">
+      <span class="dir">Next Chapter →</span>
+      <span class="title">Predicting the Next Word</span>
+    </a>
+  </nav>
+</article>
+
+<script src="script.js"></script>
+</body>
+</html>

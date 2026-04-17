@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 4: Backpropagation — How AI Thinks</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav class="site-nav">
+  <div class="nav-brand">How <em>AI</em> Thinks</div>
+  <div class="nav-progress-track"><div class="nav-progress-fill"></div></div>
+  <div class="nav-links">
+    <a href="chapter-3.html">← Prev</a>
+    <a href="index.html">Contents</a>
+    <a href="chapter-5.html">Next →</a>
+  </div>
+</nav>
+
+<article class="chapter-page prose">
+  <header class="chapter-header reveal">
+    <div class="chapter-label">Chapter 04</div>
+    <h1 class="chapter-title">Backpropagation</h1>
+    <p class="chapter-subtitle">The brilliant trick that makes training models with billions of weights possible — by working backwards.</p>
+  </header>
+
+  <p class="reveal">In Chapter 3, we figured out how to adjust w₁ and w₂ by computing partial derivatives of the loss. We did it by writing out the full loss equation and manually differentiating. That worked fine for 2 weights. But when we have a model with a <strong>billion</strong> weights, can we really write out a billion equations and differentiate each one?</p>
+
+  <h2 class="reveal">The Problem of Scale</h2>
+
+  <p class="reveal">To calculate the partial derivative of w₁ in Chapter 3, we treated w₂ as a constant and did a bunch of calculations — about as many as it took to compute the loss itself. Same for w₂. So with a billion weights, calculating all the partial derivatives naively would require a <em>billion times</em> as many calculations as computing the loss. Repeated for every single training step. That's infeasible.</p>
+
+  <div class="analogy reveal">
+    <div class="analogy-icon">🧩</div>
+    <p><strong>The Maze Analogy:</strong> Imagine a maze with 100 entrances and one exit — a piece of cheese in the center. Starting from each entrance would be slow. But starting from the cheese and working backwards? You solve it once and get the path from every entrance. Backpropagation works the same way — by going backwards through the calculations, we compute <strong>all</strong> the partial derivatives in about the same time as one forward pass.</p>
+  </div>
+
+  <h2 class="reveal">A Simple Example: f(x) = (x²)³</h2>
+
+  <p class="reveal">Forget turkeys for a moment. Let's take f(x) = (x²)³ and think of it as a machine with two steps:</p>
+
+  <div class="flow reveal">
+    <div class="flow-box" style="background:var(--mint-dim); border:1px solid rgba(52,211,153,.3); color:var(--mint);">Input: x</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box" style="background:var(--indigo-dim); border:1px solid rgba(129,140,248,.3); color:var(--indigo);">Step A: Square it (x²)</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box" style="background:var(--coral-dim); border:1px solid rgba(251,113,133,.3); color:var(--coral);">Step B: Cube it (input³)</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box" style="background:var(--amber-dim); border:1px solid rgba(251,191,36,.3); color:var(--amber);">Output</div>
+  </div>
+
+  <h3 class="reveal">Forward Pass</h3>
+  <p class="reveal">Plug in x = 3:</p>
+
+  <div class="math-block reveal">
+    <div class="math-title">Forward Pass</div>
+    <div class="math-step">
+      <div class="step-num">A</div>
+      <div class="step-content">Input 3 → Square it → 3² = <span class="result">9</span></div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">B</div>
+      <div class="step-content">Input 9 → Cube it → 9³ = <span class="result">729</span></div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">✓</div>
+      <div class="step-content">So f(3) = 729</div>
+    </div>
+  </div>
+
+  <h3 class="reveal">Backward Pass — The Key Idea</h3>
+
+  <p class="reveal">Now the question: if we increase x by a tiny amount, how much does the output change? We work <strong>backwards</strong> from the output:</p>
+
+  <div class="math-block reveal">
+    <div class="math-title">Backward Pass</div>
+    <div class="math-step">
+      <div class="step-num">1</div>
+      <div class="step-content"><strong>Start at the output.</strong> How much does a tiny change in the output affect... the output? Trivially: <span class="hl">1</span> (one times itself).</div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">2</div>
+      <div class="step-content"><strong>Step B backward.</strong> B does: input³. Derivative of x³ is 3x². At input = 9: 3 × 9² = 3 × 81 = <span class="hl">243</span>.<br>Multiply by what came from the right: 1 × 243 = <span class="result">243</span>.</div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">3</div>
+      <div class="step-content"><strong>Step A backward.</strong> A does: input². Derivative of x² is 2x. At input = 3: 2 × 3 = <span class="hl">6</span>.<br>Multiply by what came from B: 243 × 6 = <span class="result">1,458</span>.</div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">✓</div>
+      <div class="step-content"><strong>Result:</strong> If x increases by a tiny amount ε, the output increases by 1,458 × ε.</div>
+    </div>
+  </div>
+
+  <p class="reveal">Let's verify: f(3) = 729, and f(3.01) = (3.01²)³ = (9.0601)³ = 743.68. The difference is 14.68, and 1458 × 0.01 = 14.58. Close! (The tiny discrepancy is because the derivative is exact only for infinitely small changes.)</p>
+
+  <h3 class="reveal">Why Backward?</h3>
+
+  <p class="reveal">In this 2-step example, going forward or backward takes the same effort. But imagine 1000 steps in a chain, and you want the derivative at each one. Working backward lets you <strong>reuse</strong> the calculations you've already done — each step multiplies by one local derivative and passes it along. Working forward, you'd have to recompute from the output for each step independently.</p>
+
+  <p class="reveal">It's like multiplying 32 × 93 × 38 and 14 × 93 × 38. If you start from the right, you compute 93 × 38 once and reuse it. Starting from the left, you compute it twice. With billions of weights, this reuse is the difference between feasible and impossible.</p>
+
+  <h2 class="reveal">The Chain Rule</h2>
+
+  <p class="reveal">If this sounds familiar, it's because it's the <strong>chain rule</strong> from calculus. For a function f(g(x)), the derivative with respect to x is:</p>
+
+  <div class="card indigo reveal">
+    <p style="font-family:var(--font-mono); color:var(--text-1); text-align:center; margin:0; font-size:1rem;">derivative of f w.r.t. x = (derivative of f w.r.t. g) × (derivative of g w.r.t. x)</p>
+  </div>
+
+  <p class="reveal">With f(x) = x³ and g(x) = x², this gives us: 3(g(x))² × 2x = 3(x²)² × 2x = 3x⁴ × 2x = 6x⁵. At x = 3: 6 × 243 = 1,458. Same answer!</p>
+
+  <h2 class="reveal">Backprop for the Turkey Model</h2>
+
+  <p class="reveal">Now let's apply this to our turkey feather model. The forward calculation flows left to right: take weights, multiply by turkey data, get predictions, compute errors, square them, add them up to get loss. The backward calculation flows right to left: starting from the loss, propagate the derivative back through each operation to figure out how each weight affects the loss.</p>
+
+  <h3 class="reveal">Forward Pass (Review)</h3>
+
+  <div class="math-block reveal">
+    <div class="math-title">Forward: w₁=1000, w₂=3000</div>
+    <div class="math-step">
+      <div class="step-num">1</div>
+      <div class="step-content">Predictions: T1=5500, T2=4500, T3=4250</div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">2</div>
+      <div class="step-content">Errors: T1=500, T2=1000, T3=−250</div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">3</div>
+      <div class="step-content">Squared errors: 250000, 1000000, 62500</div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">4</div>
+      <div class="step-content">Loss = 250000 + 1000000 + 62500 = <span class="result">1,312,500</span></div>
+    </div>
+  </div>
+
+  <h3 class="reveal">Backward Pass</h3>
+
+  <p class="reveal">Now we go backwards through each operation. For each step, we multiply the incoming gradient (from the right) by the local derivative. Here's the key: we need to figure out how a tiny change in w₁ (or w₂) would ripple through all the calculations and affect the final loss.</p>
+
+  <div class="math-block reveal">
+    <div class="math-title">Backward Pass — Turkey #1's contribution to ∂loss/∂w₁</div>
+    <div class="math-step">
+      <div class="step-num">1</div>
+      <div class="step-content"><strong>Start at loss.</strong> Gradient from right = <span class="hl">1</span></div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">2</div>
+      <div class="step-content"><strong>Sum backward.</strong> Sum just adds — derivative is 1 per input. Gradient stays <span class="hl">1</span>.</div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">3</div>
+      <div class="step-content"><strong>Square backward.</strong> The square function: error². Derivative = 2 × error. Error for T1 = 500.<br>Gradient = 1 × 2 × 500 = <span class="hl">1,000</span></div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">4</div>
+      <div class="step-content"><strong>Subtract backward.</strong> (prediction − actual). Derivative w.r.t. prediction = 1.<br>Gradient = 1,000 × 1 = <span class="hl">1,000</span></div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">5</div>
+      <div class="step-content"><strong>Multiply backward.</strong> Prediction = height × w₁ + length × w₂. The partial derivative w.r.t. w₁ is height = 1.0.<br>Gradient = 1,000 × 1.0 = <span class="result">1,000</span></div>
+    </div>
+  </div>
+
+  <p class="reveal">That's Turkey #1's contribution. We do the same for Turkey #2 (contribution: 1,500) and Turkey #3 (contribution: −625). Adding them up: 1,000 + 1,500 + (−625) = <strong>1,875</strong>. That matches our calculation from Chapter 3!</p>
+
+  <div class="math-block reveal">
+    <div class="math-title">All three turkeys → ∂loss/∂w₁</div>
+    <div class="math-step">
+      <div class="step-num">T1</div>
+      <div class="step-content">2 × 500 × 1.0 = <span class="hl">1,000</span></div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">T2</div>
+      <div class="step-content">2 × 1000 × 0.75 = <span class="hl">1,500</span></div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">T3</div>
+      <div class="step-content">2 × (−250) × 1.25 = <span class="hl">−625</span></div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">Σ</div>
+      <div class="step-content">Total: 1,000 + 1,500 + (−625) = <span class="result">1,875</span> ✓</div>
+    </div>
+  </div>
+
+  <div class="math-block reveal">
+    <div class="math-title">All three turkeys → ∂loss/∂w₂</div>
+    <div class="math-step">
+      <div class="step-num">T1</div>
+      <div class="step-content">2 × 500 × 1.5 = <span class="hl">1,500</span></div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">T2</div>
+      <div class="step-content">2 × 1000 × 1.25 = <span class="hl">2,500</span></div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">T3</div>
+      <div class="step-content">2 × (−250) × 1.0 = <span class="hl">−500</span></div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">Σ</div>
+      <div class="step-content">Total: 1,500 + 2,500 + (−500) = <span class="result">3,500</span> ✓</div>
+    </div>
+  </div>
+
+  <h2 class="reveal">The Key Rules of Backpropagation</h2>
+
+  <div class="card mint reveal">
+    <div class="card-label">Rule 1: Multiply</div>
+    <p>Each step multiplies the incoming gradient by its local derivative. The local derivative depends on what operation the step performs (squaring, cubing, multiplying by a constant, etc.).</p>
+  </div>
+
+  <div class="card mint reveal">
+    <div class="card-label">Rule 2: Add at Junctions</div>
+    <p>When multiple arrows come into a single node (like w₁ being used for all three turkeys), we <strong>add</strong> the gradients from each arrow. A small change in w₁ affects all three predictions, so its total gradient is the sum of its effects through each path.</p>
+  </div>
+
+  <div class="card mint reveal">
+    <div class="card-label">Rule 3: Always Start with 1</div>
+    <p>The backward pass always starts with 1 at the output. "How much does a tiny change in the output affect the output?" — by definition, 1 times that tiny change.</p>
+  </div>
+
+  <h2 class="reveal">The Big Picture: Training</h2>
+
+  <p class="reveal">You've now seen the full idea of how a <strong>training loop</strong> works:</p>
+
+  <div class="flow reveal" style="flex-direction:column; gap:0.5rem; align-items:stretch; max-width:400px; margin:1.5rem auto;">
+    <div class="flow-box" style="background:var(--mint-dim); border:1px solid rgba(52,211,153,.3); color:var(--mint); width:100%;">① Start with random weights</div>
+    <div style="text-align:center; color:var(--text-4);">↓</div>
+    <div class="flow-box" style="background:var(--indigo-dim); border:1px solid rgba(129,140,248,.3); color:var(--indigo); width:100%;">② Forward pass → compute predictions and loss</div>
+    <div style="text-align:center; color:var(--text-4);">↓</div>
+    <div class="flow-box" style="background:var(--coral-dim); border:1px solid rgba(251,113,133,.3); color:var(--coral); width:100%;">③ Backward pass → compute gradient for every weight</div>
+    <div style="text-align:center; color:var(--text-4);">↓</div>
+    <div class="flow-box" style="background:var(--amber-dim); border:1px solid rgba(251,191,36,.3); color:var(--amber); width:100%;">④ Update all weights: w = w − learning_rate × gradient</div>
+    <div style="text-align:center; color:var(--text-4);">↓ repeat</div>
+  </div>
+
+  <p class="reveal">This is what we did with 2 weights and 3 turkeys, and it's also what's used to train the models underlying ChatGPT with <strong>trillions of weights</strong> and <strong>tens of trillions of data points</strong>. The "turkeys" for language models are sequences of text — we'll see exactly what they look like starting in Chapter 8.</p>
+
+  <div class="takeaway reveal">
+    <div class="takeaway-label">Key Insight</div>
+    <p><strong>Backpropagation</strong> is the technique of propagating derivatives backwards through calculations to efficiently compute how each weight affects the loss. Without it, training models with millions or billions of parameters would be computationally impossible. With it, computing all the gradients takes about the same amount of work as one forward pass — regardless of how many weights there are.</p>
+  </div>
+
+  <nav class="chapter-footer-nav reveal">
+    <a href="chapter-3.html" class="prev">
+      <span class="dir">← Previous</span>
+      <span class="title">Training a Model</span>
+    </a>
+    <a href="chapter-5.html" class="next">
+      <span class="dir">Next Chapter →</span>
+      <span class="title">The Matrix</span>
+    </a>
+  </nav>
+</article>
+
+<script src="script.js"></script>
+</body>
+</html>
