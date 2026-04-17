@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 9: Generating Text — How AI Thinks</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav class="site-nav">
+  <div class="nav-brand">How <em>AI</em> Thinks</div>
+  <div class="nav-progress-track"><div class="nav-progress-fill"></div></div>
+  <div class="nav-links">
+    <a href="chapter-8.html">← Prev</a>
+    <a href="index.html">Contents</a>
+    <a href="chapter-10.html">Next →</a>
+  </div>
+</nav>
+
+<article class="chapter-page prose">
+  <header class="chapter-header reveal">
+    <div class="chapter-label">Chapter 09</div>
+    <h1 class="chapter-title">Generating Text</h1>
+    <p class="chapter-subtitle">How the model actually writes — one token at a time, guided by probabilities and controlled by temperature.</p>
+  </header>
+
+  <p class="reveal">Now for the fun part. We've seen how the model is trained — predict next tokens, calculate loss, update weights. But how does it actually <strong>generate</strong> text once trained?</p>
+
+  <h2 class="reveal">The Generation Loop</h2>
+
+  <p class="reveal">Generation is surprisingly simple. It uses the exact same machinery as training, but instead of calculating loss and updating weights, we <strong>pick a token</strong> from the probability distribution and <strong>add it to the sequence</strong>:</p>
+
+  <div class="flow reveal" style="flex-direction:column; gap:0.5rem; align-items:stretch; max-width:480px; margin:1.5rem auto;">
+    <div class="flow-box" style="background:var(--mint-dim); border:1px solid rgba(52,211,153,.3); color:var(--mint); width:100%;">① Start: Feed prompt tokens into model</div>
+    <div style="text-align:center; color:var(--text-4);">↓</div>
+    <div class="flow-box" style="background:var(--indigo-dim); border:1px solid rgba(129,140,248,.3); color:var(--indigo); width:100%;">② Model outputs probability for every possible next token</div>
+    <div style="text-align:center; color:var(--text-4);">↓</div>
+    <div class="flow-box" style="background:var(--amber-dim); border:1px solid rgba(251,191,36,.3); color:var(--amber); width:100%;">③ Pick one token from the probability distribution</div>
+    <div style="text-align:center; color:var(--text-4);">↓</div>
+    <div class="flow-box" style="background:var(--coral-dim); border:1px solid rgba(251,113,133,.3); color:var(--coral); width:100%;">④ Add picked token to the sequence</div>
+    <div style="text-align:center; color:var(--text-4);">↓ repeat from ①</div>
+  </div>
+
+  <p class="reveal">Let's trace through a real example from a <strong>trained</strong> model. The prompt is "The capital of France is":</p>
+
+  <div class="demo reveal">
+    <div class="demo-header">
+      <div class="demo-icon mint">🎯</div>
+      <div class="demo-title">Next Token Prediction: Trained Model</div>
+    </div>
+    <p class="demo-desc">Input: "The capital of France is" — What comes next?</p>
+
+    <p style="font-size:0.85rem; color:var(--text-3); margin-bottom:0.5rem;"><strong>Top 5 predictions:</strong></p>
+    <div class="prob-row"><span class="prob-label" style="color:var(--mint)">Paris</span><div class="prob-track"><div class="prob-fill" style="width:98%; background:var(--mint);"></div></div><span class="prob-val" style="color:var(--mint)">98.1%</span></div>
+    <div class="prob-row"><span class="prob-label">the</span><div class="prob-track"><div class="prob-fill" style="width:0.7%; background:var(--indigo);"></div></div><span class="prob-val">0.7%</span></div>
+    <div class="prob-row"><span class="prob-label">also</span><div class="prob-track"><div class="prob-fill" style="width:0.5%; background:var(--indigo);"></div></div><span class="prob-val">0.5%</span></div>
+    <div class="prob-row"><span class="prob-label">a</span><div class="prob-track"><div class="prob-fill" style="width:0.3%; background:var(--text-3);"></div></div><span class="prob-val">0.3%</span></div>
+    <div class="prob-row"><span class="prob-label">[space]</span><div class="prob-track"><div class="prob-fill" style="width:0.1%; background:var(--text-3);"></div></div><span class="prob-val">0.1%</span></div>
+
+    <p style="font-size:0.85rem; color:var(--text-3); margin-top:1rem; margin-bottom:0.5rem;"><strong>Bottom 5 predictions:</strong></p>
+    <div class="prob-row"><span class="prob-label" style="color:var(--text-4)">pizza</span><div class="prob-track"><div class="prob-fill" style="width:0.01%; background:var(--text-4);"></div></div><span class="prob-val">~0%</span></div>
+    <div class="prob-row"><span class="prob-label" style="color:var(--text-4)">banana</span><div class="prob-track"><div class="prob-fill" style="width:0.01%; background:var(--text-4);"></div></div><span class="prob-val">~0%</span></div>
+
+    <p style="font-size:0.82rem; color:var(--text-3); margin-top:0.75rem;">The top 5 add up to over 99%. That leaves only 1% spread across all 65,531 other tokens. The model is <strong>very</strong> confident that "Paris" comes next.</p>
+  </div>
+
+  <p class="reveal">We pick "Paris" (98.1% chance), add it to the sequence, and now our input is "The capital of France is Paris". We feed this back in and the model predicts what comes after "Paris". Maybe "." (period) or "," or ", which" — and so the generation continues, one token at a time, until the model outputs a stop token or reaches a length limit.</p>
+
+  <h2 class="reveal">Greedy vs. Sampling</h2>
+
+  <p class="reveal">If we always pick the <strong>most likely</strong> token (called <strong>greedy decoding</strong>), then the same prompt will always generate the exact same text. But you know from using ChatGPT that it often gives different answers to the same question. That's because instead of always picking the top choice, the model <strong>samples randomly according to the probabilities</strong>.</p>
+
+  <div class="card-grid reveal">
+    <div class="grid-card" style="border-color:rgba(129,140,248,.3);">
+      <h4 style="color:var(--indigo);">Greedy Decoding</h4>
+      <p>Always pick the highest probability token. Deterministic — same input, same output. Good for factual queries.</p>
+    </div>
+    <div class="grid-card" style="border-color:rgba(52,211,153,.3);">
+      <h4 style="color:var(--mint);">Random Sampling</h4>
+      <p>Pick randomly weighted by probability. Creative and varied. Good for writing, brainstorming, storytelling.</p>
+    </div>
+  </div>
+
+  <p class="reveal">With "Paris is in" as input, the model might give: "France" 40%, "the" 15%, "a" 12%, "Europe" 8%, "northern" 6%... With sampling, sometimes you get "France" and sometimes "Europe" or "the heart of..." — leading to completely different continuations.</p>
+
+  <h2 class="reveal">Temperature: Controlling Creativity</h2>
+
+  <p class="reveal"><strong>Temperature</strong> is a number that controls how random the sampling is. Think of molecules — at low temperatures, they're frozen and predictable; at high temperatures, they bounce around chaotically.</p>
+
+  <div class="card indigo reveal">
+    <div class="card-label">How Temperature Works</div>
+    <p><strong>Low temperature (0.1–0.5):</strong> The probability distribution gets "sharpened" — the most likely token becomes overwhelmingly dominant. Almost like greedy decoding. Use for factual answers.</p>
+    <p><strong>Temperature = 1.0:</strong> The original probabilities are used as-is. The default.</p>
+    <p><strong>High temperature (1.5–3.0):</strong> The distribution gets "flattened" — less likely tokens get more chance. More creative and surprising, but also more likely to produce nonsense.</p>
+  </div>
+
+  <p class="reveal">Mathematically, temperature divides the <strong>logits</strong> (the raw numbers before softmax) by T. When T is small, the differences between logits get amplified; when T is large, they get compressed.</p>
+
+  <h2 class="reveal">🎮 Interactive: Temperature Simulator</h2>
+
+  <div class="demo reveal" id="tempDemo">
+    <div class="demo-header">
+      <div class="demo-icon amber">🌡️</div>
+      <div class="demo-title">Temperature Effect Visualizer</div>
+    </div>
+    <p class="demo-desc">Drag the slider to see how temperature changes the probability distribution for "The capital of France is ___"</p>
+
+    <div class="slider-row">
+      <span class="slider-label">Temp</span>
+      <input type="range" id="tempSlider" min="1" max="40" value="10" step="1">
+      <span class="slider-val" id="tempVal">1.0</span>
+    </div>
+
+    <div id="tempBars" style="margin-top:1rem;"></div>
+    <div id="tempComment" style="font-size:0.85rem; color:var(--text-3); margin-top:1rem;"></div>
+  </div>
+
+  <h2 class="reveal">Generation Keeps Going</h2>
+
+  <p class="reveal">Let's follow the generation further. Say we picked "also" after "The capital of France is":</p>
+
+  <div class="demo reveal">
+    <div class="demo-header">
+      <div class="demo-icon indigo">🌳</div>
+      <div class="demo-title">Generation Tree</div>
+    </div>
+    <div style="font-family:var(--font-mono); font-size:0.85rem; line-height:2.2;">
+      <div>"The capital of France is <span style="color:var(--mint);">Paris</span>" <span style="color:var(--text-4);">(98.1%)</span></div>
+      <div style="padding-left:2rem;">→ "Paris<span style="color:var(--mint);">.</span>" <span style="color:var(--text-4);">(62%)</span> → end</div>
+      <div style="padding-left:2rem;">→ "Paris<span style="color:var(--mint);">,</span>" <span style="color:var(--text-4);">(31%)</span> → " which..." / " a city..."</div>
+      <div style="margin-top:0.5rem;">"The capital of France is <span style="color:var(--indigo);">also</span>" <span style="color:var(--text-4);">(0.5%)</span></div>
+      <div style="padding-left:2rem;">→ "also <span style="color:var(--indigo);">known</span>" <span style="color:var(--text-4);">(28%)</span> → " as Paris" / " for its..."</div>
+      <div style="padding-left:2rem;">→ "also <span style="color:var(--indigo);">the</span>" <span style="color:var(--text-4);">(22%)</span> → " country's..." / " largest..."</div>
+      <div style="padding-left:2rem;">→ "also <span style="color:var(--indigo);">Paris</span>" <span style="color:var(--text-4);">(18%)</span></div>
+      <div style="margin-top:0.5rem;">"The capital of France is <span style="color:var(--coral);">the</span>" <span style="color:var(--text-4);">(0.7%)</span></div>
+      <div style="padding-left:2rem;">→ "the <span style="color:var(--coral);">city</span>" <span style="color:var(--text-4);">(35%)</span> → " of Paris..."</div>
+      <div style="padding-left:2rem;">→ "the <span style="color:var(--coral);">Paris</span>" <span style="color:var(--text-4);">(19%)</span></div>
+    </div>
+    <p style="font-size:0.82rem; color:var(--text-3); margin-top:1rem;">The model really wants to get "Paris" in there — you can feel this "urge" it has to output "Paris" even in positions where it doesn't quite fit grammatically.</p>
+  </div>
+
+  <h2 class="reveal">Tamil Example</h2>
+
+  <div class="card amber reveal">
+    <div class="card-label">Tamil Generation</div>
+    <p>Prompt: <span class="tamil" style="font-size:1.1rem;">"தமிழ்நாட்டின் தலைநகரம்"</span> (The capital of Tamil Nadu)</p>
+    <p style="margin-top:0.5rem;">Top predictions:</p>
+    <p><span class="tamil">சென்னை</span> (Chennai) — <strong>~95%</strong></p>
+    <p><span class="tamil">என்பது</span> (is) — ~2%</p>
+    <p><span class="tamil">ஆகும்</span> (is/becomes) — ~1.5%</p>
+    <p style="color:var(--text-3); font-size:0.85rem; margin-top:0.5rem;">The model learned from Tamil text that Chennai overwhelmingly follows "capital of Tamil Nadu" — just like "Paris" follows "capital of France" in English.</p>
+  </div>
+
+  <h2 class="reveal">One Wasteful Detail</h2>
+
+  <p class="reveal">During generation, the model processes the <strong>entire sequence</strong> each time we add a new token. When we input "The capital of France is Paris,", the model computes predictions for every position, but we only use the prediction for the last position. All the earlier computations are wasted — we already knew the predictions for "The", "capital", etc.</p>
+
+  <p class="reveal">This is wildly inefficient. In Chapter 17, we'll see the <strong>KV Cache</strong> optimization that stores the intermediate calculations from previous tokens so they don't need to be recomputed. This makes generation much faster.</p>
+
+  <div class="takeaway reveal">
+    <div class="takeaway-label">Key Insight</div>
+    <p><strong>Text generation is just next-token prediction in a loop.</strong> The model predicts a probability distribution over all possible next tokens, we pick one (using greedy decoding, sampling, or temperature-adjusted sampling), add it to the sequence, and repeat. The same model architecture handles both training and generation — the only difference is whether we calculate loss and update weights (training) or pick tokens and grow the sequence (generation).</p>
+    <p style="margin-top:0.5rem;">Now you understand the inputs, outputs, and loss function of a GPT model. It's time to look inside. What are those hundreds of millions of weights actually <em>doing</em>?</p>
+  </div>
+
+  <nav class="chapter-footer-nav reveal">
+    <a href="chapter-8.html" class="prev">
+      <span class="dir">← Previous</span>
+      <span class="title">What Exactly Does the Model Predict?</span>
+    </a>
+    <a href="chapter-10.html" class="next">
+      <span class="dir">Next Chapter →</span>
+      <span class="title">Deep Networks: Hedgehogs and Quills</span>
+    </a>
+  </nav>
+</article>
+
+<script src="script.js"></script>
+<script>
+// Temperature simulator
+const tempSlider = document.getElementById('tempSlider');
+const items = [
+  { label: 'Paris', base: 4.5, color: 'var(--mint)' },
+  { label: 'the', base: -0.3, color: 'var(--indigo)' },
+  { label: 'also', base: -0.6, color: 'var(--indigo)' },
+  { label: 'a', base: -1.2, color: 'var(--text-3)' },
+  { label: 'Lyon', base: -3.5, color: 'var(--amber)' },
+  { label: 'Berlin', base: -5.0, color: 'var(--coral)' },
+  { label: 'pizza', base: -8.0, color: 'var(--text-4)' }
+];
+
+function updateTemp() {
+  const T = +tempSlider.value / 10;
+  document.getElementById('tempVal').textContent = T.toFixed(1);
+
+  const scaled = items.map(it => it.base / T);
+  const maxS = Math.max(...scaled);
+  const exps = scaled.map(s => Math.exp(s - maxS));
+  const sum = exps.reduce((a,b) => a+b, 0);
+  const probs = exps.map(e => e / sum);
+
+  const container = document.getElementById('tempBars');
+  container.innerHTML = '';
+  items.forEach((it, i) => {
+    const pct = (probs[i] * 100);
+    const row = document.createElement('div');
+    row.className = 'prob-row';
+    row.innerHTML = `
+      <span class="prob-label">${it.label}</span>
+      <div class="prob-track"><div class="prob-fill" style="width:${pct}%; background:${it.color};"></div></div>
+      <span class="prob-val">${pct < 0.1 ? '~0%' : pct.toFixed(1) + '%'}</span>
+    `;
+    container.appendChild(row);
+  });
+
+  const comment = document.getElementById('tempComment');
+  if (T < 0.3) comment.textContent = '🥶 Near-zero temperature: "Paris" gets virtually 100%. Completely deterministic.';
+  else if (T < 0.8) comment.textContent = '❄️ Low temperature: "Paris" still dominates. Good for factual answers where you want consistency.';
+  else if (T < 1.3) comment.textContent = '✅ Normal temperature (~1.0): Original probabilities. The standard setting for most uses.';
+  else if (T < 2.0) comment.textContent = '🔥 High temperature: Other tokens get meaningful probability. More creative but less reliable.';
+  else comment.textContent = '🌋 Very high temperature: Almost uniform distribution. Even "pizza" has a real chance! Maximum chaos.';
+}
+tempSlider.addEventListener('input', updateTemp);
+updateTemp();
+</script>
+</body>
+</html>

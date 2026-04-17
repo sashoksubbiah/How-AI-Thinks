@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 8: What Exactly Does the Model Predict? — How AI Thinks</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav class="site-nav">
+  <div class="nav-brand">How <em>AI</em> Thinks</div>
+  <div class="nav-progress-track"><div class="nav-progress-fill"></div></div>
+  <div class="nav-links">
+    <a href="chapter-7.html">← Prev</a>
+    <a href="index.html">Contents</a>
+    <a href="chapter-9.html">Next →</a>
+  </div>
+</nav>
+
+<article class="chapter-page prose">
+  <header class="chapter-header reveal">
+    <div class="chapter-label">Chapter 08</div>
+    <h1 class="chapter-title">What Exactly Does the Model Predict?</h1>
+    <p class="chapter-subtitle">Understanding the inputs, outputs, and loss function of a GPT model — the three things you need to know before looking inside.</p>
+  </header>
+
+  <p class="reveal">Our turkey model predicted a single number (feathers). But a GPT model predicts something far more complex: for every token in the input, it outputs a <strong>probability distribution over the entire vocabulary</strong> — a probability for every possible next token.</p>
+
+  <p class="reveal">There are three questions we need to answer before we crack open the model:</p>
+
+  <div class="card-grid reveal">
+    <div class="grid-card" style="border-color:rgba(52,211,153,.3);">
+      <h4 style="color:var(--mint);">What are X and Y?</h4>
+      <p>What data goes in and what target are we comparing against?</p>
+    </div>
+    <div class="grid-card" style="border-color:rgba(129,140,248,.3);">
+      <h4 style="color:var(--indigo);">How is loss calculated?</h4>
+      <p>How do we get a single number that says "how wrong is the model?"</p>
+    </div>
+    <div class="grid-card" style="border-color:rgba(251,113,133,.3);">
+      <h4 style="color:var(--coral);">How does generation work?</h4>
+      <p>How do you go from predictions to actual text? (Chapter 9)</p>
+    </div>
+  </div>
+
+  <h2 class="reveal">Training on a Sentence</h2>
+
+  <p class="reveal">Let's go back to our tiny language and train on the text <strong>"he went to the store."</strong> We start by inputting just the beginning-of-sequence token &lt;bos&gt;. The model outputs a probability for every word in the vocabulary:</p>
+
+  <div class="demo reveal">
+    <div class="demo-header">
+      <div class="demo-icon coral">🎯</div>
+      <div class="demo-title">Next Token Prediction (Untrained Model)</div>
+    </div>
+    <p class="demo-desc">Input: just "&lt;bos&gt;" — the model predicts what comes first.</p>
+    <div style="margin-bottom:1rem;">
+      <div class="prob-row"><span class="prob-label">bed</span><div class="prob-track"><div class="prob-fill" style="width:16%; background:var(--text-3);"></div></div><span class="prob-val">16.2%</span></div>
+      <div class="prob-row"><span class="prob-label">went</span><div class="prob-track"><div class="prob-fill" style="width:12%; background:var(--text-3);"></div></div><span class="prob-val">12.1%</span></div>
+      <div class="prob-row"><span class="prob-label">is</span><div class="prob-track"><div class="prob-fill" style="width:11%; background:var(--text-3);"></div></div><span class="prob-val">11.4%</span></div>
+      <div class="prob-row"><span class="prob-label">man</span><div class="prob-track"><div class="prob-fill" style="width:10%; background:var(--text-3);"></div></div><span class="prob-val">10.2%</span></div>
+      <div class="prob-row"><span class="prob-label" style="color:var(--mint)">he ← correct</span><div class="prob-track"><div class="prob-fill" style="width:5%; background:var(--mint);"></div></div><span class="prob-val" style="color:var(--mint)">0.05%</span></div>
+      <div class="prob-row"><span class="prob-label" style="color:var(--text-4)">...others</span><div class="prob-track"><div class="prob-fill" style="width:46%; background:var(--text-4);"></div></div><span class="prob-val">50%</span></div>
+    </div>
+    <p style="font-size:0.85rem; color:var(--text-3);">The model hasn't been trained yet, so these probabilities are essentially random. It thinks "bed" is most likely, but we want "he" — which currently has only 0.05% probability.</p>
+  </div>
+
+  <p class="reveal">We don't care that the model is wrong right now — that's what training will fix. We continue feeding in tokens one by one, each time getting a prediction for the next token. After processing the full sequence, we have 5 predictions:</p>
+
+  <div class="demo reveal">
+    <table class="data-table">
+      <thead><tr><th>Input so far</th><th>Correct next token</th><th>Model's probability for correct token</th></tr></thead>
+      <tbody>
+        <tr><td>&lt;bos&gt;</td><td style="color:var(--mint)">he</td><td style="color:var(--coral)">0.05%</td></tr>
+        <tr><td>&lt;bos&gt; he</td><td style="color:var(--mint)">went</td><td style="color:var(--coral)">2.48%</td></tr>
+        <tr><td>&lt;bos&gt; he went</td><td style="color:var(--mint)">to</td><td style="color:var(--amber)">5.72%</td></tr>
+        <tr><td>&lt;bos&gt; he went to</td><td style="color:var(--mint)">the</td><td style="color:var(--amber)">4.72%</td></tr>
+        <tr><td>&lt;bos&gt; he went to the</td><td style="color:var(--mint)">store</td><td style="color:var(--mint)">40.54%</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:0.82rem; color:var(--text-3); margin-top:0.5rem;">We only care about the probability the model assigned to the <strong>correct</strong> next token. Everything else is noise for loss calculation purposes.</p>
+  </div>
+
+  <h2 class="reveal">Computing Loss</h2>
+
+  <p class="reveal">We need a single number that says "how wrong is the model?" — just like the loss in our turkey model. For language models, we multiply the probabilities of the correct tokens together:</p>
+
+  <div class="math-block reveal">
+    <div class="math-title">Loss Calculation</div>
+    <div class="math-step">
+      <div class="step-num">1</div>
+      <div class="step-content">Multiply probabilities: 0.05% × 2.48% × 5.72% × 4.72% × 40.54%</div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">2</div>
+      <div class="step-content">= 0.0005 × 0.0248 × 0.0572 × 0.0472 × 0.4054 = <span class="hl">0.0000000136</span></div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">3</div>
+      <div class="step-content">Negate (so lower = better): <span class="result">loss = −0.0000000136</span></div>
+    </div>
+  </div>
+
+  <p class="reveal">In practice, we use the <strong>negative log</strong> of each probability instead of multiplying directly (this avoids numerical issues with multiplying tiny numbers and has nice mathematical properties). This is called <strong>cross-entropy loss</strong>:</p>
+
+  <div class="math-block reveal">
+    <div class="math-title">Cross-Entropy Loss (What's Actually Used)</div>
+    <div class="math-step">
+      <div class="step-num">1</div>
+      <div class="step-content">−log(0.0005) = <span class="hl">7.60</span></div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">2</div>
+      <div class="step-content">−log(0.0248) = <span class="hl">3.70</span></div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">3</div>
+      <div class="step-content">−log(0.0572) = <span class="hl">2.86</span></div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">4</div>
+      <div class="step-content">−log(0.0472) = <span class="hl">3.05</span></div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">5</div>
+      <div class="step-content">−log(0.4054) = <span class="hl">0.90</span></div>
+    </div>
+    <div class="math-step">
+      <div class="step-num">Σ</div>
+      <div class="step-content">Average loss = (7.60 + 3.70 + 2.86 + 3.05 + 0.90) / 5 = <span class="result">3.62</span></div>
+    </div>
+  </div>
+
+  <p class="reveal">When probability is 100%, −log(1.0) = 0 (perfect, no loss). When probability is tiny, −log gives a large number (terrible, high loss). So <strong>lower loss = better predictions</strong>, just like our turkey model.</p>
+
+  <h2 class="reveal">🎮 Interactive: Loss Calculator</h2>
+
+  <div class="demo reveal" id="lossDemo">
+    <div class="demo-header">
+      <div class="demo-icon mint">📉</div>
+      <div class="demo-title">Cross-Entropy Loss Explorer</div>
+    </div>
+    <p class="demo-desc">Adjust the probability the model assigns to the correct token and watch the loss change.</p>
+
+    <div class="slider-row">
+      <span class="slider-label">P(correct)</span>
+      <input type="range" id="pSlider" min="1" max="100" value="5" step="1">
+      <span class="slider-val" id="pVal">5%</span>
+    </div>
+
+    <div class="result-box" id="lossResult" style="margin-top:1rem; text-align:center;">
+      <div style="font-size:0.85rem; color:var(--text-3);">−log(<span id="pFrac">0.05</span>) = </div>
+      <div style="font-size:1.8rem; margin-top:0.25rem;"><span id="lossVal" style="color:var(--amber); font-family:var(--font-mono);"></span></div>
+      <div id="lossComment" style="font-size:0.85rem; color:var(--text-3); margin-top:0.25rem;"></div>
+    </div>
+
+    <div style="margin-top:1.25rem;">
+      <p style="font-size:0.85rem; color:var(--text-3); margin-bottom:0.5rem;">Example loss values:</p>
+      <div class="prob-row"><span class="prob-label">P = 1%</span><div class="prob-track"><div class="prob-fill" style="width:100%; background:var(--coral);"></div></div><span class="prob-val">loss = 4.61</span></div>
+      <div class="prob-row"><span class="prob-label">P = 10%</span><div class="prob-track"><div class="prob-fill" style="width:50%; background:var(--amber);"></div></div><span class="prob-val">loss = 2.30</span></div>
+      <div class="prob-row"><span class="prob-label">P = 50%</span><div class="prob-track"><div class="prob-fill" style="width:15%; background:var(--mint);"></div></div><span class="prob-val">loss = 0.69</span></div>
+      <div class="prob-row"><span class="prob-label">P = 90%</span><div class="prob-track"><div class="prob-fill" style="width:2.3%; background:var(--mint);"></div></div><span class="prob-val">loss = 0.11</span></div>
+      <div class="prob-row"><span class="prob-label">P = 99%</span><div class="prob-track"><div class="prob-fill" style="width:0.2%; background:var(--mint);"></div></div><span class="prob-val">loss = 0.01</span></div>
+    </div>
+  </div>
+
+  <h2 class="reveal">Feeding the Full Sequence at Once</h2>
+
+  <p class="reveal">I showed the model processing one token at a time for clarity, but in practice the <strong>entire sequence goes in at once</strong>. The model outputs probability distributions for all next tokens simultaneously. This is much more efficient because GPUs (Chapter 5) need big chunks of data to use their massive parallelism.</p>
+
+  <p class="reveal">During actual training, over <strong>60,000 tokens</strong> are fed to each GPU at once, and the GPU can make predictions on all 60,000, calculate loss, and adjust weights in less than half a second.</p>
+
+  <h2 class="reveal">But Won't the Model Cheat?</h2>
+
+  <p class="reveal">If the whole sequence goes in at once, won't the model just peek at the next token instead of actually learning to predict it? Great instinct — models love to cheat. If they can lower the loss in any way, even unintended ways, they'll do it.</p>
+
+  <p class="reveal">The transformer architecture prevents this through <strong>masking</strong>. When predicting the token after "went" in "He went to the store," the model literally cannot see "to" or any later tokens. The attention mechanism (Chapter 14) uses a mask that sets future token information to negative infinity, making it invisible. This is called <strong>causal masking</strong> — the model can only look backwards.</p>
+
+  <h2 class="reveal">Batches and Tensors</h2>
+
+  <p class="reveal">In real training, we don't just feed one sequence — we feed a <strong>batch</strong> of many sequences simultaneously. If our batch size is B = 3 and sequence length is T = 5:</p>
+
+  <div class="demo reveal">
+    <div style="display:flex; gap:1.5rem; flex-wrap:wrap; justify-content:center; align-items:center; font-family:var(--font-mono); font-size:0.85rem;">
+      <div style="text-align:center;">
+        <div style="color:var(--mint); font-size:0.7rem; margin-bottom:4px;">Input: B × T (3×5)</div>
+        <div style="background:var(--mint-dim); padding:10px; border-radius:8px; border:1px solid rgba(52,211,153,.2); line-height:1.8;">
+          [ 0, 3, 11, 10, 9 ]<br>[ 0, 9, 4, 5, 7 ]<br>[ 0, 3, 5, 1, 6 ]
+        </div>
+        <div style="font-size:0.72rem; color:var(--text-4); margin-top:4px;">3 sequences × 5 tokens each</div>
+      </div>
+      <span style="color:var(--text-4); font-size:1.5rem;">→ 🧠 →</span>
+      <div style="text-align:center;">
+        <div style="color:var(--coral); font-size:0.7rem; margin-bottom:4px;">Output: B × T × V (3×5×12)</div>
+        <div style="background:var(--coral-dim); padding:10px; border-radius:8px; border:1px solid rgba(251,113,133,.2); line-height:1.8; font-size:0.78rem;">
+          3 sequences ×<br>5 predictions each ×<br>12 probabilities each
+        </div>
+        <div style="font-size:0.72rem; color:var(--text-4); margin-top:4px;">= 180 numbers total</div>
+      </div>
+    </div>
+    <p style="font-size:0.82rem; color:var(--text-3); margin-top:1rem;">The output is a 3-dimensional <strong>tensor</strong> of size B × T × V. "Tensor" just means "multi-dimensional array of numbers" — nothing scarier than a matrix, just with more dimensions.</p>
+  </div>
+
+  <h2 class="reveal">The Training Concept in Full</h2>
+
+  <div class="card mint reveal">
+    <div class="card-label">The Whole Picture</div>
+    <p style="color:var(--text-1);">We have text data (our corpus). We tokenize it into sequences of numbers. We feed batches of sequences into the model. The model outputs probability distributions for every next token. We compute loss by looking at how much probability the model gave to the <strong>correct</strong> next tokens. We backpropagate to compute gradients. We update all the weights. We repeat — millions of times.</p>
+    <p style="color:var(--text-1); margin-top:0.5rem;">If the model architecture is good enough (and the transformer is!), the loss will come down. The model will learn language, facts, reasoning, coding, and everything else present in its training data.</p>
+  </div>
+
+  <div class="takeaway reveal">
+    <div class="takeaway-label">Key Insight</div>
+    <p>The loss function for language models looks only at the probability assigned to the <strong>correct</strong> next token — everything else is ignored for loss purposes. This feels strange at first, but it works: by maximizing the probability of correct next tokens across trillions of examples, the model learns the full richness of language. If 40% of the time "the" follows "went to" and 30% of the time "a" does, the model learns that distribution naturally.</p>
+  </div>
+
+  <nav class="chapter-footer-nav reveal">
+    <a href="chapter-7.html" class="prev">
+      <span class="dir">← Previous</span>
+      <span class="title">Tokens</span>
+    </a>
+    <a href="chapter-9.html" class="next">
+      <span class="dir">Next Chapter →</span>
+      <span class="title">Generating Text</span>
+    </a>
+  </nav>
+</article>
+
+<script src="script.js"></script>
+<script>
+// Loss calculator
+const pSlider = document.getElementById('pSlider');
+function updateLoss() {
+  const p = +pSlider.value;
+  document.getElementById('pVal').textContent = p + '%';
+  document.getElementById('pFrac').textContent = (p/100).toFixed(4);
+  const loss = -Math.log(p/100);
+  document.getElementById('lossVal').textContent = loss.toFixed(3);
+  const comment = document.getElementById('lossComment');
+  if (p >= 90) comment.textContent = '🎯 Excellent! Model is very confident in the right answer.';
+  else if (p >= 50) comment.textContent = '✅ Good — model thinks the right token is most likely.';
+  else if (p >= 10) comment.textContent = '⚠️ Mediocre — right token isn\'t top choice.';
+  else comment.textContent = '💥 Terrible — model has almost no idea the correct token is right.';
+}
+pSlider.addEventListener('input', updateLoss);
+updateLoss();
+</script>
+</body>
+</html>

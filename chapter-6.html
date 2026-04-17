@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 6: Translation and Transformers — How AI Thinks</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav class="site-nav">
+  <div class="nav-brand">How <em>AI</em> Thinks</div>
+  <div class="nav-progress-track"><div class="nav-progress-fill"></div></div>
+  <div class="nav-links">
+    <a href="chapter-5.html">← Prev</a>
+    <a href="index.html">Contents</a>
+    <a href="chapter-7.html">Next →</a>
+  </div>
+</nav>
+
+<article class="chapter-page prose">
+  <header class="chapter-header reveal">
+    <div class="chapter-label">Chapter 06</div>
+    <h1 class="chapter-title">Translation and the Birth of Transformers</h1>
+    <p class="chapter-subtitle">How a failed dream of automatic translation accidentally led to the architecture behind ChatGPT.</p>
+  </header>
+
+  <p class="reveal">Enough with the turkeys. Let's get back to language. And we're going to start with <strong>translation</strong>, because translation is an essential part of the GPT story.</p>
+
+  <h2 class="reveal">A Brief History of Machine Translation</h2>
+
+  <p class="reveal">Almost as long as there have been computers, researchers have been trying to build systems that automatically translate text from one language to another. The applications are enormous — governments cared about it for spying and defence, businesses needed it for global commerce, and ordinary people wanted to read foreign websites. The first public demonstration was in 1954, when Georgetown University and IBM showed a system that could translate 60 Russian sentences into English.</p>
+
+  <p class="reveal">For the next fifty years, two main approaches were tried:</p>
+
+  <div class="card indigo reveal">
+    <div class="card-label">Approach 1: Rule-Based</div>
+    <p>Parse the source sentence into a language-agnostic structure linking subject, object, verb, etc. Look up the equivalent structure in the target language. Convert words using a bilingual dictionary. Apply grammar rules. Spit out the translated sentence.</p>
+    <p style="color:var(--coral);">Problem: Real language is endlessly ambiguous and context-dependent. You can't hand-code enough rules.</p>
+  </div>
+
+  <div class="card indigo reveal">
+    <div class="card-label">Approach 2: Statistical</div>
+    <p>Collect lots of parallel sentences in source and target languages (like UN documents that exist in multiple languages). For new sentences, find snippets of similar text and mix and match structure and words based on statistical patterns.</p>
+    <p style="color:var(--coral);">Problem: Only worked in narrow, formulaic domains like weather reports. Couldn't handle the richness of real text.</p>
+  </div>
+
+  <h3 class="reveal">Tamil Translation Example</h3>
+
+  <p class="reveal">To see why translation is so hard, consider translating between English and Tamil. Tamil has different word order (typically Subject-Object-Verb), agglutinative morphology (suffixes change meaning dramatically), and cultural concepts that don't map directly:</p>
+
+  <div class="demo reveal">
+    <div class="demo-header">
+      <div class="demo-icon amber">🔄</div>
+      <div class="demo-title">English ↔ Tamil Translation Challenges</div>
+    </div>
+
+    <table class="data-table">
+      <thead><tr><th>English</th><th>Tamil</th><th>Challenge</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>He went to the store</td>
+          <td><span class="tamil">அவன் கடைக்கு போனான்</span></td>
+          <td style="font-size:0.82rem; color:var(--text-3);">Word order reverses: "He store-to went"</td>
+        </tr>
+        <tr>
+          <td>I will come</td>
+          <td><span class="tamil">நான் வருவேன்</span></td>
+          <td style="font-size:0.82rem; color:var(--text-3);">Future tense is a suffix: வரு+வேன் (come+I-will)</td>
+        </tr>
+        <tr>
+          <td>She ate rice</td>
+          <td><span class="tamil">அவள் சோறு சாப்பிட்டாள்</span></td>
+          <td style="font-size:0.82rem; color:var(--text-3);">Gender embedded in verb ending: -ஆள் = female subject</td>
+        </tr>
+        <tr>
+          <td>The book is on the table</td>
+          <td><span class="tamil">புத்தகம் மேஜையில் இருக்கிறது</span></td>
+          <td style="font-size:0.82rem; color:var(--text-3);">"on" becomes suffix -இல் on the noun. No articles (the).</td>
+        </tr>
+      </tbody>
+    </table>
+    <p style="font-size:0.82rem; color:var(--text-3); margin-top:0.75rem;">A rule-based system would need thousands of hand-crafted rules just for English-Tamil. And those rules wouldn't help at all with English-Japanese or Tamil-Hindi.</p>
+  </div>
+
+  <p class="reveal">Until the mid-2010s, machine translation was, to be blunt, <strong>bad</strong>. Not just bad for literary text or poetry — bad for straightforward text like instructions for changing a tyre, or a confirmation screen after posting an item for sale, or a tutorial on drawing a wall in CAD software. These were all beyond the capabilities of machine translation.</p>
+
+  <h2 class="reveal">2017: "Attention Is All You Need"</h2>
+
+  <p class="reveal">In 2017, Ashish Vaswani and seven fellow researchers at Google published a paper that is now considered one of the most significant papers ever in AI: <strong>"Attention Is All You Need."</strong> In it, they introduced a new type of AI model — the <strong>transformer</strong>.</p>
+
+  <p class="reveal">The problem they were working on was language translation. They trained their model on 4.5 million English/German bilingual sentence pairs. The resulting trained model handily beat all existing approaches, shocking the machine translation research community.</p>
+
+  <div class="card mint reveal">
+    <div class="card-label">The Key Insight</div>
+    <p>The quality of translation was proof that the model was <strong>understanding</strong> the input text in some non-trivial way — including relating concepts in the text to knowledge about the world, like we humans do. What if the model's ability to understand could be separated from the whole translation part? This would make the invention applicable to any language task, and you wouldn't need to limit training data to bilingual content — you could train it on <strong>all the text you could possibly find</strong>.</p>
+  </div>
+
+  <h2 class="reveal">From Translation to Generation</h2>
+
+  <p class="reveal">With the original transformer for translation, the model generates target language text guided by both the full source text and whatever has been generated so far. For example, translating "He went to the store" into Tamil, the model starts with a blank slate and picks <span class="tamil">அவன்</span> ("He"), then uses both the English sentence and <span class="tamil">அவன்</span> to pick the next Tamil token, and so on.</p>
+
+  <p class="reveal">But in a <strong>general-purpose, non-translation transformer</strong>, there's no complete thought in a source language to guide generation. Instead, you give the model a snippet of starting text — a <strong>prompt</strong> — and it generates more text from there. This is the key idea behind GPT (Generative Pre-trained Transformer) models.</p>
+
+  <div class="flow reveal">
+    <div class="flow-box" style="background:var(--coral-dim); border:1px solid rgba(251,113,133,.3); color:var(--coral);">Prompt (Text In)</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box" style="background:var(--indigo-dim); border:1px solid rgba(129,140,248,.3); color:var(--indigo);">🧠 Transformer</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box" style="background:var(--mint-dim); border:1px solid rgba(52,211,153,.3); color:var(--mint);">Completion (Text Out)</div>
+  </div>
+
+  <h2 class="reveal">What's Coming Next</h2>
+
+  <p class="reveal">In Chapters 7–9, we'll work through the three questions you need answered before looking inside the model:</p>
+
+  <div class="card-grid reveal">
+    <div class="grid-card">
+      <div class="gc-icon">✂️</div>
+      <h4>Chapter 7: Tokens</h4>
+      <p>How text gets converted to numbers the model can process.</p>
+    </div>
+    <div class="grid-card">
+      <div class="gc-icon">🎯</div>
+      <h4>Chapter 8: What It Predicts</h4>
+      <p>During training, what exactly are X and Y? How is loss calculated?</p>
+    </div>
+    <div class="grid-card">
+      <div class="gc-icon">✨</div>
+      <h4>Chapter 9: Generating Text</h4>
+      <p>How the model actually writes text, and how temperature controls creativity.</p>
+    </div>
+  </div>
+
+  <p class="reveal">If you come back to this chapter after reading the whole guide, the original transformer diagram from the 2017 paper will make complete sense. Every box — embeddings, multi-head attention, feed forward, add & norm — you'll understand what it does and why it's there.</p>
+
+  <div class="takeaway reveal">
+    <div class="takeaway-label">Key Insight</div>
+    <p>The transformer was invented for translation, but its ability to deeply understand text turned out to be far more general. By removing the translation-specific parts and training on massive amounts of text with the simple objective of "predict the next token," researchers created GPT models — the foundation of ChatGPT, Claude, Gemini, and every other modern AI assistant.</p>
+  </div>
+
+  <nav class="chapter-footer-nav reveal">
+    <a href="chapter-5.html" class="prev">
+      <span class="dir">← Previous</span>
+      <span class="title">The Matrix</span>
+    </a>
+    <a href="chapter-7.html" class="next">
+      <span class="dir">Next Chapter →</span>
+      <span class="title">Tokens</span>
+    </a>
+  </nav>
+</article>
+
+<script src="script.js"></script>
+</body>
+</html>

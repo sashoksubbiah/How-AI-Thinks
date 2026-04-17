@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 7: Tokens — How AI Thinks</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav class="site-nav">
+  <div class="nav-brand">How <em>AI</em> Thinks</div>
+  <div class="nav-progress-track"><div class="nav-progress-fill"></div></div>
+  <div class="nav-links">
+    <a href="chapter-6.html">← Prev</a>
+    <a href="index.html">Contents</a>
+    <a href="chapter-8.html">Next →</a>
+  </div>
+</nav>
+
+<article class="chapter-page prose">
+  <header class="chapter-header reveal">
+    <div class="chapter-label">Chapter 07</div>
+    <h1 class="chapter-title">Tokens</h1>
+    <p class="chapter-subtitle">How AI reads text — not as letters or words, but as tokens: the fundamental unit of language for a GPT model.</p>
+  </header>
+
+  <p class="reveal">You may have encountered tokens when paying for API access to models like ChatGPT — you pay a tiny fraction of a cent per token. But tokens aren't just a billing unit. They are a <strong>fundamental concept</strong>: GPT models are trained on tokens, take tokens as input, and generate tokens as output.</p>
+
+  <h2 class="reveal">What Is a Token?</h2>
+
+  <p class="reveal">For the moment, think of a token as a word. Using our language from Chapter 2, we could assign each word an ID:</p>
+
+  <div class="demo reveal">
+    <table class="data-table">
+      <thead><tr><th>Token ID</th><th>Word</th></tr></thead>
+      <tbody>
+        <tr><td>0</td><td>&lt;bos&gt; (beginning of sequence)</td></tr>
+        <tr><td>1</td><td>a</td></tr>
+        <tr><td>2</td><td>bed</td></tr>
+        <tr><td>3</td><td>he</td></tr>
+        <tr><td>4</td><td>house</td></tr>
+        <tr><td>5</td><td>is</td></tr>
+        <tr><td>6</td><td>man</td></tr>
+        <tr><td>7</td><td>red</td></tr>
+        <tr><td>8</td><td>store</td></tr>
+        <tr><td>9</td><td>the</td></tr>
+        <tr><td>10</td><td>to</td></tr>
+        <tr><td>11</td><td>went</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="reveal">A <strong>tokenizer</strong> converts text to token IDs (encoding) and back (decoding). "He went to the store" becomes [3, 11, 10, 9, 8]. Since our model works with matrices of numbers (Chapter 5), we need this conversion. But real tokenizers are more sophisticated than simple word lists.</p>
+
+  <h2 class="reveal">Bits, Bytes, and How Computers Store Text</h2>
+
+  <p class="reveal">Digital data is all 1s and 0s. Each 1 or 0 is a <strong>bit</strong>. A <strong>byte</strong> is 8 bits, giving 2⁸ = 256 possible values (0 through 255). Text is stored by mapping characters to bytes using encoding standards.</p>
+
+  <div class="card indigo reveal">
+    <div class="card-label">ASCII (1960s)</div>
+    <p>The first widely adopted standard. 'A' = 65, 'B' = 66, 'a' = 97, '!' = 33. Only 128 values — fine for English, hopeless for Tamil, Chinese, Arabic, or emoji.</p>
+  </div>
+
+  <div class="card indigo reveal">
+    <div class="card-label">UTF-8 (Modern Standard)</div>
+    <p>A clever encoding of Unicode that uses <strong>variable numbers of bytes</strong> per character. English letters: 1 byte. Tamil characters: 3 bytes. Emoji: 4 bytes. Nearly 300,000 characters supported.</p>
+  </div>
+
+  <div class="demo reveal">
+    <div class="demo-header">
+      <div class="demo-icon amber">🔤</div>
+      <div class="demo-title">UTF-8 Encoding Examples</div>
+    </div>
+    <table class="data-table">
+      <thead><tr><th>Character</th><th>UTF-8 Bytes</th><th>Num Bytes</th></tr></thead>
+      <tbody>
+        <tr><td>A</td><td style="color:var(--mint);">65</td><td>1</td></tr>
+        <tr><td>a</td><td style="color:var(--mint);">97</td><td>1</td></tr>
+        <tr><td>!</td><td style="color:var(--mint);">33</td><td>1</td></tr>
+        <tr><td>é</td><td style="color:var(--indigo);">195, 169</td><td>2</td></tr>
+        <tr><td><span class="tamil">அ</span></td><td style="color:var(--amber);">224, 174, 133</td><td>3</td></tr>
+        <tr><td><span class="tamil">க</span></td><td style="color:var(--amber);">224, 174, 149</td><td>3</td></tr>
+        <tr><td><span class="tamil">ன்</span></td><td style="color:var(--amber);">224, 174, 169, 224, 175, 141</td><td>6</td></tr>
+        <tr><td>🦃</td><td style="color:var(--coral);">240, 159, 166, 131</td><td>4</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 class="reveal">Why Not Just Use Bytes as Tokens?</h2>
+
+  <p class="reveal">We <em>could</em> make each byte a token (256 tokens total). "He" would become two tokens: [72, 101]. This works, and the model could learn to predict byte sequences. But for a given number of weights, the model works <strong>much, much better</strong> if tokens are bigger units that carry meaning — like words.</p>
+
+  <div class="analogy reveal">
+    <div class="analogy-icon">🍓</div>
+    <p><strong>The Strawberry Problem:</strong> Remember when early GPT models got "How many r's in strawberry?" wrong? Now you can see why. "Strawberry" might be a single token — the model never sees individual letters. To count r's, it needs to have learned how to spell a word it usually processes as one unit. Tokens have meaning; they are not letter-by-letter.</p>
+  </div>
+
+  <p class="reveal">What we want: tokens that are <strong>word-like</strong> (carrying meaning), <strong>not too many</strong> (65,536 is a good target for a medium model), and <strong>lossless</strong> (can encode any text, even obscure characters, and decode it back perfectly).</p>
+
+  <h2 class="reveal">Byte Pair Encoding (BPE)</h2>
+
+  <p class="reveal">The elegant solution is a <strong>byte-level byte pair encoding</strong> tokenizer. The idea is simple: start with 256 tokens (one per byte), then repeatedly <strong>merge the most common adjacent pair</strong> into a new token until you reach your desired vocabulary size.</p>
+
+  <h3 class="reveal">Worked Example: BPE with V = 261</h3>
+
+  <p class="reveal">Let's train a tiny tokenizer (5 merges beyond the base 256 byte tokens) on three sentences:</p>
+
+  <div class="code-block reveal">she runs.
+he also runs.
+she is running.</div>
+
+  <p class="reveal">Start by encoding each word as UTF-8 bytes:</p>
+
+  <div class="demo reveal">
+    <table class="data-table">
+      <thead><tr><th>Word</th><th>Initial Token IDs</th></tr></thead>
+      <tbody>
+        <tr><td>she</td><td>115, 104, 101</td></tr>
+        <tr><td>he</td><td>104, 101</td></tr>
+        <tr><td>runs</td><td>114, 117, 110, 115</td></tr>
+        <tr><td>also</td><td>97, 108, 115, 111</td></tr>
+        <tr><td>running</td><td>114, 117, 110, 110, 105, 110, 103</td></tr>
+        <tr><td>is</td><td>105, 115</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="reveal">Now scan for the most frequent adjacent pair. The pair (104, 101) — "he" — appears in "she", "he", and we merge it into new token <strong>256</strong>:</p>
+
+  <div class="demo reveal" id="bpeDemo">
+    <div class="demo-header">
+      <div class="demo-icon mint">🔗</div>
+      <div class="demo-title">BPE Merge Simulator</div>
+    </div>
+    <p class="demo-desc">Click "Next Merge" to watch byte pairs get merged step by step.</p>
+
+    <div id="bpeState" class="result-box" style="line-height:2;"></div>
+    <div style="margin-top:1rem; display:flex; gap:0.5rem;">
+      <button class="btn btn-mint" id="bpeMergeBtn">Next Merge →</button>
+      <button class="btn btn-ghost" id="bpeResetBtn">↺ Reset</button>
+    </div>
+    <div id="bpeMergeLog" style="margin-top:0.75rem; font-family:var(--font-mono); font-size:0.78rem; color:var(--text-3);"></div>
+  </div>
+
+  <p class="reveal">After 5 merges, our token vocabulary looks like this:</p>
+
+  <div class="demo reveal">
+    <table class="data-table">
+      <thead><tr><th>Token ID</th><th>Represents</th><th>Created by merging</th></tr></thead>
+      <tbody>
+        <tr><td>0–255</td><td>Individual bytes</td><td>(base tokens)</td></tr>
+        <tr><td style="color:var(--mint)">256</td><td>"he"</td><td>104 + 101</td></tr>
+        <tr><td style="color:var(--mint)">257</td><td>"ru"</td><td>114 + 117</td></tr>
+        <tr><td style="color:var(--mint)">258</td><td>"run"</td><td>257 + 110</td></tr>
+        <tr><td style="color:var(--mint)">259</td><td>"she"</td><td>115 + 256</td></tr>
+        <tr><td style="color:var(--mint)">260</td><td>"runs"</td><td>258 + 115</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:0.82rem; color:var(--text-3); margin-top:0.5rem;">Notice: "run" naturally emerged as its own token — not because a linguist coded it, but because it was statistically frequent. This is the beauty of BPE.</p>
+  </div>
+
+  <h2 class="reveal">Real-World Tokenization</h2>
+
+  <p class="reveal">In practice, we train the tokenizer on billions of characters of text and merge until we reach a vocabulary of ~65,536 tokens. The most common words each become a single token. Less common words get split into pieces.</p>
+
+  <div class="demo reveal">
+    <div class="demo-header">
+      <div class="demo-icon indigo">✂️</div>
+      <div class="demo-title">Tokenization Examples</div>
+    </div>
+
+    <table class="data-table">
+      <thead><tr><th>Text</th><th>Tokens</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>"He went to the store"</td>
+          <td>
+            <span style="background:var(--mint-dim); padding:2px 8px; border-radius:4px; font-family:var(--font-mono); font-size:0.8rem;">He</span>
+            <span style="background:var(--indigo-dim); padding:2px 8px; border-radius:4px; font-family:var(--font-mono); font-size:0.8rem;"> went</span>
+            <span style="background:var(--coral-dim); padding:2px 8px; border-radius:4px; font-family:var(--font-mono); font-size:0.8rem;"> to</span>
+            <span style="background:var(--amber-dim); padding:2px 8px; border-radius:4px; font-family:var(--font-mono); font-size:0.8rem;"> the</span>
+            <span style="background:var(--cyan-dim); padding:2px 8px; border-radius:4px; font-family:var(--font-mono); font-size:0.8rem;"> store</span>
+          </td>
+        </tr>
+        <tr>
+          <td>"unhappiness"</td>
+          <td>
+            <span style="background:var(--mint-dim); padding:2px 8px; border-radius:4px; font-family:var(--font-mono); font-size:0.8rem;">un</span>
+            <span style="background:var(--indigo-dim); padding:2px 8px; border-radius:4px; font-family:var(--font-mono); font-size:0.8rem;">happiness</span>
+          </td>
+        </tr>
+        <tr>
+          <td>"floccinaucinihilipilification"</td>
+          <td>
+            <span style="background:var(--mint-dim); padding:2px 8px; border-radius:4px; font-family:var(--font-mono); font-size:0.8rem;">fl</span>
+            <span style="background:var(--indigo-dim); padding:2px 8px; border-radius:4px; font-family:var(--font-mono); font-size:0.8rem;">occ</span>
+            <span style="background:var(--coral-dim); padding:2px 8px; border-radius:4px; font-family:var(--font-mono); font-size:0.8rem;">in</span>
+            <span style="background:var(--amber-dim); padding:2px 8px; border-radius:4px; font-family:var(--font-mono); font-size:0.8rem;">auc</span>
+            <span style="background:var(--cyan-dim); padding:2px 8px; border-radius:4px; font-family:var(--font-mono); font-size:0.8rem;">ini</span>
+            <span style="background:var(--mint-dim); padding:2px 8px; border-radius:4px; font-family:var(--font-mono); font-size:0.8rem;">hil</span>
+            <span style="background:var(--indigo-dim); padding:2px 8px; border-radius:4px; font-family:var(--font-mono); font-size:0.8rem;">ip</span>
+            <span style="background:var(--coral-dim); padding:2px 8px; border-radius:4px; font-family:var(--font-mono); font-size:0.8rem;">il</span>
+            <span style="background:var(--amber-dim); padding:2px 8px; border-radius:4px; font-family:var(--font-mono); font-size:0.8rem;">ification</span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <p style="font-size:0.82rem; color:var(--text-3); margin-top:0.5rem;">Common words like "the" are one token. Rare words get split into smaller pieces. Spaces are often included at the start of tokens.</p>
+  </div>
+
+  <h2 class="reveal">Tamil Tokenization</h2>
+
+  <p class="reveal">Tamil characters take 3 bytes each in UTF-8, so Tamil words generally consume more tokens than English words of similar meaning. The BPE process naturally discovers common Tamil syllables and suffixes:</p>
+
+  <div class="demo reveal">
+    <div class="demo-header">
+      <div class="demo-icon amber">🇮🇳</div>
+      <div class="demo-title">Tamil Token Examples</div>
+    </div>
+    <table class="data-table">
+      <thead><tr><th>Tamil Text</th><th>Meaning</th><th>Likely Tokenization</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="tamil">அவன்</span></td>
+          <td>He</td>
+          <td><span style="background:var(--amber-dim); padding:2px 8px; border-radius:4px; font-family:var(--font-mono); font-size:0.8rem;">அவன்</span> (one token — very common word)</td>
+        </tr>
+        <tr>
+          <td><span class="tamil">கடைக்கு</span></td>
+          <td>To the store</td>
+          <td>
+            <span style="background:var(--amber-dim); padding:2px 8px; border-radius:4px; font-family:var(--font-mono); font-size:0.8rem;">கடை</span>
+            <span style="background:var(--mint-dim); padding:2px 8px; border-radius:4px; font-family:var(--font-mono); font-size:0.8rem;">க்கு</span>
+          </td>
+        </tr>
+        <tr>
+          <td><span class="tamil">போனான்</span></td>
+          <td>He went</td>
+          <td>
+            <span style="background:var(--amber-dim); padding:2px 8px; border-radius:4px; font-family:var(--font-mono); font-size:0.8rem;">போ</span>
+            <span style="background:var(--indigo-dim); padding:2px 8px; border-radius:4px; font-family:var(--font-mono); font-size:0.8rem;">னான்</span>
+          </td>
+        </tr>
+        <tr>
+          <td><span class="tamil">பல்கலைக்கழகம்</span></td>
+          <td>University</td>
+          <td>
+            <span style="background:var(--amber-dim); padding:2px 8px; border-radius:4px; font-family:var(--font-mono); font-size:0.8rem;">பல்</span>
+            <span style="background:var(--mint-dim); padding:2px 8px; border-radius:4px; font-family:var(--font-mono); font-size:0.8rem;">கலை</span>
+            <span style="background:var(--indigo-dim); padding:2px 8px; border-radius:4px; font-family:var(--font-mono); font-size:0.8rem;">க்</span>
+            <span style="background:var(--coral-dim); padding:2px 8px; border-radius:4px; font-family:var(--font-mono); font-size:0.8rem;">கழகம்</span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <p style="font-size:0.82rem; color:var(--text-3); margin-top:0.5rem;">The suffix <span class="tamil">க்கு</span> (meaning "to") naturally becomes its own token because it's so frequent — the BPE algorithm discovers Tamil grammar on its own!</p>
+  </div>
+
+  <h2 class="reveal">Special Tokens</h2>
+
+  <p class="reveal">Beyond regular text tokens, models reserve a few IDs for special purposes:</p>
+
+  <div class="card-grid reveal">
+    <div class="grid-card">
+      <div class="gc-icon">▶️</div>
+      <h4>&lt;bos&gt;</h4>
+      <p>Beginning of sequence. Signals the start of a new conversation or text.</p>
+    </div>
+    <div class="grid-card">
+      <div class="gc-icon">⏹️</div>
+      <h4>&lt;eos&gt;</h4>
+      <p>End of sequence. Signals the model should stop generating.</p>
+    </div>
+    <div class="grid-card">
+      <div class="gc-icon">🔧</div>
+      <h4>&lt;tool_call&gt;</h4>
+      <p>Signals the model wants to use an external tool (search, calculator, etc.).</p>
+    </div>
+    <div class="grid-card">
+      <div class="gc-icon">👤</div>
+      <h4>&lt;user&gt; / &lt;assistant&gt;</h4>
+      <p>Mark whose turn it is in a conversation.</p>
+    </div>
+  </div>
+
+  <p class="reveal">These special tokens are reserved from the vocabulary (e.g., the last 9 out of 65,536 IDs), so the total number of regular tokens is slightly less than V.</p>
+
+  <h2 class="reveal">Why V = 65,536?</h2>
+
+  <p class="reveal">The vocabulary size V is a design choice. Too small → common words get split into too many pieces, wasting the model's processing power. Too large → too many rare tokens that never get properly trained, and the model's first and last layers (which are V-sized) become enormous.</p>
+
+  <p class="reveal">V should be proportional to model size. A small model can't learn to predict among a million tokens. For a medium-sized model with 20–32 layers, V = 65,536 (which is 2¹⁶) works well. Larger models like GPT-4 may use 100,000+.</p>
+
+  <div class="takeaway reveal">
+    <div class="takeaway-label">Key Insight</div>
+    <p><strong>Tokens are the atoms of language for a GPT model.</strong> The BPE tokenizer elegantly discovers word-like units without any hand-crafted rules — it just counts frequent patterns. Common words become single tokens; rare words get split into meaningful pieces. The tokenizer is lossless: any text (English, Tamil, emoji, code) can be encoded and decoded perfectly. With our tokenizer in hand, we're ready to understand exactly what the model predicts.</p>
+  </div>
+
+  <nav class="chapter-footer-nav reveal">
+    <a href="chapter-6.html" class="prev">
+      <span class="dir">← Previous</span>
+      <span class="title">Translation and Transformers</span>
+    </a>
+    <a href="chapter-8.html" class="next">
+      <span class="dir">Next Chapter →</span>
+      <span class="title">What Exactly Does the Model Predict?</span>
+    </a>
+  </nav>
+</article>
+
+<script src="script.js"></script>
+<script>
+// BPE Merge Simulator
+const initialWords = {
+  'she': [115, 104, 101],
+  'he': [104, 101],
+  'runs': [114, 117, 110, 115],
+  'also': [97, 108, 115, 111],
+  'running': [114, 117, 110, 110, 105, 110, 103],
+  'is': [105, 115]
+};
+
+const merges = [
+  { pair: [104, 101], newId: 256, label: '"h"+"e" → 256 ("he")' },
+  { pair: [114, 117], newId: 257, label: '"r"+"u" → 257 ("ru")' },
+  { pair: [257, 110], newId: 258, label: '257("ru")+"n" → 258 ("run")' },
+  { pair: [115, 256], newId: 259, label: '"s"+256("he") → 259 ("she")' },
+  { pair: [258, 115], newId: 260, label: '258("run")+"s" → 260 ("runs")' }
+];
+
+let words, mergeStep;
+
+function tokenLabel(id) {
+  if (id >= 256) return `<span style="color:var(--mint); font-weight:600;">${id}</span>`;
+  const ch = String.fromCharCode(id);
+  return `<span style="color:var(--text-2);">${id}<sub style="font-size:0.6em;color:var(--text-4);">${ch}</sub></span>`;
+}
+
+function renderState() {
+  const stateEl = document.getElementById('bpeState');
+  let html = '';
+  for (const [word, tokens] of Object.entries(words)) {
+    html += `<div style="margin-bottom:0.3rem;"><span style="color:var(--amber); min-width:70px; display:inline-block;">${word}:</span> [${tokens.map(tokenLabel).join(', ')}]</div>`;
+  }
+  stateEl.innerHTML = html;
+}
+
+function applyMerge(pair, newId) {
+  for (const word in words) {
+    const tokens = words[word];
+    const newTokens = [];
+    let i = 0;
+    while (i < tokens.length) {
+      if (i < tokens.length - 1 && tokens[i] === pair[0] && tokens[i+1] === pair[1]) {
+        newTokens.push(newId);
+        i += 2;
+      } else {
+        newTokens.push(tokens[i]);
+        i++;
+      }
+    }
+    words[word] = newTokens;
+  }
+}
+
+function resetBPE() {
+  words = {};
+  for (const w in initialWords) words[w] = [...initialWords[w]];
+  mergeStep = 0;
+  renderState();
+  document.getElementById('bpeMergeLog').innerHTML = '';
+}
+
+document.getElementById('bpeMergeBtn').addEventListener('click', () => {
+  if (mergeStep >= merges.length) return;
+  const m = merges[mergeStep];
+  applyMerge(m.pair, m.newId);
+  mergeStep++;
+  renderState();
+  document.getElementById('bpeMergeLog').innerHTML += `<div>Merge ${mergeStep}: ${m.label}</div>`;
+});
+
+document.getElementById('bpeResetBtn').addEventListener('click', resetBPE);
+resetBPE();
+</script>
+</body>
+</html>
