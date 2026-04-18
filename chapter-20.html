@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Chapter 20: Adam — How AI Thinks</title><link rel="stylesheet" href="style.css"></head><body>
+<nav class="site-nav"><div class="nav-brand">How <em>AI</em> Thinks</div><div class="nav-progress-track"><div class="nav-progress-fill"></div></div><div class="nav-links"><a href="chapter-19.html">← Prev</a><a href="index.html">Contents</a><a href="chapter-21.html">Next →</a></div></nav>
+<article class="chapter-page prose">
+<header class="chapter-header reveal"><div class="chapter-label">Chapter 20</div><h1 class="chapter-title">Adam</h1><p class="chapter-subtitle">The most popular optimizer in deep learning — it adapts the learning rate for every single parameter, independently.</p></header>
+
+<h2 class="reveal">The Core Idea</h2>
+<p class="reveal"><strong>Adam</strong> (Adaptive Moment Estimation) tracks two things for every parameter:</p>
+
+<div class="card-grid reveal">
+<div class="grid-card" style="border-color:rgba(52,211,153,.3);"><div class="gc-icon">📊</div><h4>First Moment (m)</h4><p>A running average of the gradient. Like momentum — tells you the consistent direction this parameter wants to move.</p></div>
+<div class="grid-card" style="border-color:rgba(129,140,248,.3);"><div class="gc-icon">📈</div><h4>Second Moment (v)</h4><p>A running average of the <em>squared</em> gradient. Tells you how "active" this parameter is — how much its gradient varies.</p></div>
+</div>
+
+<p class="reveal">The update rule: divide the first moment by the square root of the second moment, then multiply by the learning rate. This means:</p>
+
+<div class="card mint reveal"><div class="card-label">Why Adam Works So Well</div>
+<p><strong>Parameters with consistently large gradients:</strong> Get large m and large √v. The ratio m/√v stays moderate → reasonable step size. No explosions.</p>
+<p><strong>Parameters with small, consistent gradients:</strong> Get small m but also small √v. The ratio can be large → bigger steps for parameters that need them.</p>
+<p><strong>Parameters with noisy gradients:</strong> m is small (noise cancels out) but v is large (noise doesn't cancel when squared). Ratio m/√v is tiny → conservative steps. No zig-zagging.</p>
+</div>
+
+<h2 class="reveal">Step-by-Step Adam</h2>
+<div class="math-block reveal"><div class="math-title">Adam Update for One Parameter</div>
+<div class="math-step"><div class="step-num">1</div><div class="step-content"><strong>Compute gradient g</strong> via backpropagation</div></div>
+<div class="math-step"><div class="step-num">2</div><div class="step-content"><strong>Update first moment:</strong> m = 0.9 × m_old + 0.1 × g <span style="color:var(--text-3)">(exponential moving average)</span></div></div>
+<div class="math-step"><div class="step-num">3</div><div class="step-content"><strong>Update second moment:</strong> v = 0.999 × v_old + 0.001 × g² <span style="color:var(--text-3)">(moving average of squared gradients)</span></div></div>
+<div class="math-step"><div class="step-num">4</div><div class="step-content"><strong>Bias correction:</strong> Adjust m and v to account for initialisation at zero <span style="color:var(--text-3)">(important early in training)</span></div></div>
+<div class="math-step"><div class="step-num">5</div><div class="step-content"><strong>Update parameter:</strong> w = w − learning_rate × m_corrected / (√v_corrected + ε)</div></div>
+</div>
+
+<p class="reveal">This happens for <strong>every single one</strong> of the 560 million parameters at every training step. Adam stores m and v for each parameter, so it triples the memory needed compared to basic SGD. For our 20-layer model, that's ~1.7 billion numbers just for the optimizer state.</p>
+
+<div class="takeaway reveal"><div class="takeaway-label">Key Insight</div><p><strong>Adam adapts the learning rate per parameter automatically.</strong> Parameters that need big updates get them; stable parameters get gentle nudges; noisy parameters get conservative steps. It's the default optimizer for transformer training and the backbone of how most modern AI models learn.</p></div>
+
+<nav class="chapter-footer-nav reveal"><a href="chapter-19.html" class="prev"><span class="dir">← Previous</span><span class="title">Optimizers</span></a><a href="chapter-21.html" class="next"><span class="dir">Next Chapter →</span><span class="title">Muon</span></a></nav>
+</article><script src="script.js"></script></body></html>

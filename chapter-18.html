@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Chapter 18: Evaluation — How AI Thinks</title><link rel="stylesheet" href="style.css"></head><body>
+<nav class="site-nav"><div class="nav-brand">How <em>AI</em> Thinks</div><div class="nav-progress-track"><div class="nav-progress-fill"></div></div><div class="nav-links"><a href="chapter-17.html">← Prev</a><a href="index.html">Contents</a><a href="chapter-19.html">Next →</a></div></nav>
+<article class="chapter-page prose">
+<header class="chapter-header reveal"><div class="chapter-label">Chapter 18</div><h1 class="chapter-title">How Will We Know If the Model Works?</h1><p class="chapter-subtitle">Validation loss, perplexity, and benchmarks — the three pillars of measuring AI model quality.</p></header>
+
+<h2 class="reveal">Validation Loss</h2>
+<p class="reveal">During training we compute cross-entropy loss on the training data (to update weights) and on a separate <strong>validation set</strong> the model never trains on. This tells us if the model is truly learning or just memorising.</p>
+<div class="card mint reveal"><div class="card-label">Reading the Tea Leaves</div>
+<p><strong>Both losses dropping:</strong> Genuine learning — keep training.</p>
+<p><strong>Training loss drops, validation loss rises:</strong> Overfitting! The model memorised training data quirks.</p>
+<p><strong>Both plateau:</strong> Model has learned all it can at this size. Need more parameters or better data.</p></div>
+
+<h2 class="reveal">Perplexity</h2>
+<p class="reveal"><strong>Perplexity = 2<sup>loss</sup></strong>. If loss is 3.0, perplexity is 2³ = 8 — the model is "as confused as if choosing between 8 equally likely options" at each token. An untrained model has perplexity near the vocab size (~65,536). A strong model gets down to 5–15.</p>
+
+<div class="demo reveal">
+<table class="data-table">
+<thead><tr><th>Loss</th><th>Perplexity</th><th>Stage</th></tr></thead>
+<tbody>
+<tr><td>11.0</td><td style="color:var(--coral)">2,048</td><td>Random weights (untrained)</td></tr>
+<tr><td>5.0</td><td style="color:var(--amber)">32</td><td>Early training — basic patterns</td></tr>
+<tr><td>3.0</td><td style="color:var(--mint)">8</td><td>Decent model</td></tr>
+<tr><td>1.5</td><td style="color:var(--mint)">2.8</td><td>Strong model</td></tr>
+</tbody></table></div>
+
+<h2 class="reveal">Benchmarks</h2>
+<p class="reveal">Loss measures general prediction. <strong>Benchmarks</strong> test specific capabilities: reading comprehension, math word problems (GSM8K), code generation (HumanEval), factual knowledge across 57 subjects (MMLU), logical reasoning (ARC), and common sense (HellaSwag). After each training phase we run all benchmarks and track improvements.</p>
+
+<div class="card-grid reveal">
+<div class="grid-card"><div class="gc-icon">📖</div><h4>Reading Comprehension</h4><p>Read a passage, answer factual questions about it.</p></div>
+<div class="grid-card"><div class="gc-icon">🧮</div><h4>Math (GSM8K)</h4><p>Grade-school word problems needing multi-step reasoning.</p></div>
+<div class="grid-card"><div class="gc-icon">💻</div><h4>Code (HumanEval)</h4><p>Write correct Python functions from descriptions.</p></div>
+<div class="grid-card"><div class="gc-icon">🧠</div><h4>Knowledge (MMLU)</h4><p>Multiple-choice questions across 57 academic subjects.</p></div>
+</div>
+
+<div class="takeaway reveal"><div class="takeaway-label">Key Insight</div><p>Quality is measured with <strong>validation loss</strong> (general prediction), <strong>perplexity</strong> (intuitive confusion), and <strong>benchmarks</strong> (specific skills). All three matter — a model needs both breadth and depth.</p></div>
+
+<nav class="chapter-footer-nav reveal"><a href="chapter-17.html" class="prev"><span class="dir">← Previous</span><span class="title">KV Cache</span></a><a href="chapter-19.html" class="next"><span class="dir">Next Chapter →</span><span class="title">Optimizers</span></a></nav>
+</article><script src="script.js"></script></body></html>

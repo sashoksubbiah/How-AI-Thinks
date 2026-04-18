@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Chapter 30: Being Precise About Precision — How AI Thinks</title><link rel="stylesheet" href="style.css"></head><body>
+<nav class="site-nav"><div class="nav-brand">How <em>AI</em> Thinks</div><div class="nav-progress-track"><div class="nav-progress-fill"></div></div><div class="nav-links"><a href="chapter-29.html">← Prev</a><a href="index.html">Contents</a></div></nav>
+<article class="chapter-page prose">
+<header class="chapter-header reveal"><div class="chapter-label">Chapter 30</div><h1 class="chapter-title">Being Precise About Precision</h1><p class="chapter-subtitle">How computers store decimal numbers — and why using fewer bits for each number was a breakthrough for AI.</p></header>
+
+<p class="reveal">Throughout this guide we've talked about numbers — weights, gradients, embeddings, attention scores. But how does a computer actually <em>store</em> a number like 3.14159? And does it matter?</p>
+
+<h2 class="reveal">Floating Point Numbers</h2>
+<p class="reveal">Computers store decimal numbers in <strong>floating point</strong> format. Each number gets a fixed number of bits split into three parts:</p>
+
+<div class="math-block reveal"><div class="math-title">Anatomy of a Float</div>
+<div class="math-step"><div class="step-num">S</div><div class="step-content"><strong>Sign bit</strong> (1 bit): Positive or negative</div></div>
+<div class="math-step"><div class="step-num">E</div><div class="step-content"><strong>Exponent</strong> (several bits): How big or small the number is (like scientific notation's power of 10)</div></div>
+<div class="math-step"><div class="step-num">M</div><div class="step-content"><strong>Mantissa/Fraction</strong> (remaining bits): The significant digits of the number</div></div>
+</div>
+
+<h2 class="reveal">Three Precision Levels</h2>
+<div class="demo reveal">
+<table class="data-table">
+<thead><tr><th>Format</th><th>Bits</th><th>Exponent</th><th>Mantissa</th><th>Example: π</th><th>Memory per 1B params</th></tr></thead>
+<tbody>
+<tr><td style="color:var(--text-1)">FP32</td><td>32</td><td>8 bits</td><td>23 bits</td><td>3.14159265</td><td style="color:var(--coral)">4 GB</td></tr>
+<tr><td style="color:var(--mint)">BF16</td><td>16</td><td>8 bits</td><td>7 bits</td><td>3.140625</td><td style="color:var(--mint)">2 GB</td></tr>
+<tr><td style="color:var(--amber)">FP8</td><td>8</td><td>4-5 bits</td><td>2-3 bits</td><td>3.0</td><td style="color:var(--amber)">1 GB</td></tr>
+</tbody></table></div>
+
+<h2 class="reveal">Why BF16 Is the Sweet Spot</h2>
+
+<div class="card mint reveal"><div class="card-label">BFloat16 — The AI Favourite</div>
+<p><strong>Same range as FP32</strong> (8-bit exponent) — numbers can be as large or small as FP32. Only the precision is reduced (7 mantissa bits vs 23). For AI, this trade-off is perfect: the model doesn't need to know that π is 3.14159265 vs 3.140625. The coarse shape of the loss landscape is the same at either precision.</p>
+<p style="margin-top:0.5rem;"><strong>Practical impact:</strong> BF16 cuts memory in half and doubles compute speed. A model that would need 80 GB in FP32 fits in 40 GB in BF16 — fitting on a single GPU instead of two. Training that would take 10 days takes 5.</p></div>
+
+<h2 class="reveal">Mixed Precision Training</h2>
+<p class="reveal">In practice, training uses <strong>mixed precision</strong>: most calculations happen in BF16 for speed, but a few critical operations (like accumulating gradients) use FP32 for accuracy. The weight updates are accumulated in FP32 and then cast back to BF16. This gives nearly all the speed benefits of BF16 with the accuracy of FP32.</p>
+
+<h2 class="reveal">🎮 Interactive: Precision Explorer</h2>
+<div class="demo reveal" id="precDemo">
+<div class="demo-header"><div class="demo-icon indigo">🔢</div><div class="demo-title">See How Precision Affects Numbers</div></div>
+<p class="demo-desc">Enter a number to see how it gets stored at different precisions.</p>
+<div class="slider-row">
+<span class="slider-label" style="min-width:50px;">Number</span>
+<input type="range" id="precSlider" min="-100" max="100" value="31" step="1">
+<span class="slider-val" id="precNum">3.14159</span>
+</div>
+<div class="result-box" id="precResult" style="margin-top:1rem;"></div>
+</div>
+
+<div class="divider reveal"><div class="line"></div><div class="tag">Journey Complete</div><div class="line"></div></div>
+
+<h2 class="reveal" style="text-align:center;">You Now Know How AI Thinks 🧠</h2>
+
+<div class="card mint reveal" style="text-align:center; max-width:600px; margin:2rem auto;">
+<div class="card-label">What You've Learned</div>
+<p style="color:var(--text-1); font-size:1.05rem;">From counting word pairs to training transformer models with billions of parameters — you've traveled the full journey. You understand tokens, embeddings, attention, backpropagation, gradient descent, and reinforcement learning. You can count every parameter in a 560-million-weight model. You know why GPUs matter, how temperature controls creativity, and why "strawberry" is hard to spell for AI.</p>
+<p style="color:var(--text-1); margin-top:0.5rem;">Not bad for a journey that started with turkey feathers. 🦃</p>
+</div>
+
+<div class="card-grid reveal" style="max-width:600px; margin:2rem auto;">
+<div class="grid-card"><div class="gc-icon">🔤</div><h4>Text → Tokens</h4><p>BPE tokenizer</p></div>
+<div class="grid-card"><div class="gc-icon">📊</div><h4>Tokens → Embeddings</h4><p>Lookup table of meaning</p></div>
+<div class="grid-card"><div class="gc-icon">👁️</div><h4>Attention</h4><p>Q/K/V — tokens look at each other</p></div>
+<div class="grid-card"><div class="gc-icon">🧱</div><h4>MLP</h4><p>Linear → ReLU → Linear</p></div>
+<div class="grid-card"><div class="gc-icon">🔄</div><h4>Backpropagation</h4><p>Gradients flow backwards</p></div>
+<div class="grid-card"><div class="gc-icon">💬</div><h4>SFT + RL</h4><p>Text predictor → assistant</p></div>
+</div>
+
+<p class="reveal" style="text-align:center; color:var(--text-4); margin-top:3rem; font-size:0.85rem;">Built with care for curious minds everywhere.</p>
+
+<nav class="chapter-footer-nav reveal">
+<a href="chapter-29.html" class="prev"><span class="dir">← Previous</span><span class="title">Hello, Model!</span></a>
+<a href="index.html" class="next"><span class="dir">Back to →</span><span class="title">Table of Contents</span></a>
+</nav>
+</article><script src="script.js"></script>
+<script>
+const precSlider = document.getElementById('precSlider');
+function updatePrec() {
+  const raw = +precSlider.value;
+  const num = raw / 10;
+  document.getElementById('precNum').textContent = num.toFixed(5);
+
+  // Simulate precision levels
+  const fp32 = num.toFixed(8);
+  // BF16: round to ~3 significant digits
+  const bf16sig = 3;
+  const bf16 = num === 0 ? '0.000' : parseFloat(num.toPrecision(bf16sig)).toFixed(Math.max(0, bf16sig - Math.floor(Math.log10(Math.abs(num)||1)) - 1));
+  // FP8: round to ~1-2 significant digits
+  const fp8 = num === 0 ? '0' : parseFloat(num.toPrecision(2));
+
+  const err16 = Math.abs(num - parseFloat(bf16));
+  const err8 = Math.abs(num - parseFloat(fp8));
+
+  document.getElementById('precResult').innerHTML = `
+    <div style="display:grid; grid-template-columns:70px 1fr 1fr; gap:0.3rem 1rem; font-size:0.88rem;">
+      <span style="color:var(--text-3);">FP32:</span><span style="color:var(--text-1)">${fp32}</span><span style="color:var(--mint); font-size:0.8rem;">error: ~0</span>
+      <span style="color:var(--mint);">BF16:</span><span style="color:var(--mint)">${bf16}</span><span style="color:var(--amber); font-size:0.8rem;">error: ${err16.toFixed(6)}</span>
+      <span style="color:var(--amber);">FP8:</span><span style="color:var(--amber)">${fp8}</span><span style="color:var(--coral); font-size:0.8rem;">error: ${err8.toFixed(4)}</span>
+    </div>
+    <p style="font-size:0.8rem; color:var(--text-4); margin-top:0.5rem;">BF16 saves 50% memory with tiny precision loss. FP8 saves 75% but is much coarser.</p>
+  `;
+}
+precSlider.addEventListener('input', updatePrec);
+updatePrec();
+</script></body></html>

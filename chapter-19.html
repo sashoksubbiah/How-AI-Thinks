@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Chapter 19: Optimizers — How AI Thinks</title><link rel="stylesheet" href="style.css"></head><body>
+<nav class="site-nav"><div class="nav-brand">How <em>AI</em> Thinks</div><div class="nav-progress-track"><div class="nav-progress-fill"></div></div><div class="nav-links"><a href="chapter-18.html">← Prev</a><a href="index.html">Contents</a><a href="chapter-20.html">Next →</a></div></nav>
+<article class="chapter-page prose">
+<header class="chapter-header reveal"><div class="chapter-label">Chapter 19</div><h1 class="chapter-title">Optimizers: Smarter Ways to Learn</h1><p class="chapter-subtitle">Gradient descent was a great start, but training billion-parameter models needs much smarter weight update strategies.</p></header>
+
+<h2 class="reveal">The Problem with Basic Gradient Descent</h2>
+<p class="reveal">In Chapter 3 we used the simplest possible approach: compute the gradient, multiply by a fixed learning rate, subtract from weights. This is called <strong>Stochastic Gradient Descent (SGD)</strong>. It works for our 2-weight turkey model, but has serious problems at scale:</p>
+
+<div class="card coral reveal"><div class="card-label">SGD Limitations</div>
+<p><strong>Fixed learning rate:</strong> Too small → takes forever. Too large → overshoots and diverges. The ideal rate changes throughout training.</p>
+<p><strong>Noisy gradients:</strong> Each batch of data gives a slightly different gradient. SGD follows every noisy signal, zig-zagging instead of heading straight to the optimum.</p>
+<p><strong>Same step size for all weights:</strong> Some weights need big updates, others need tiny nudges. SGD treats them all the same.</p></div>
+
+<h2 class="reveal">Learning Rate Schedules</h2>
+<p class="reveal">One simple improvement: change the learning rate over time. The standard approach is <strong>warmup + cosine decay</strong>:</p>
+
+<div class="math-block reveal"><div class="math-title">Learning Rate Schedule</div>
+<div class="math-step"><div class="step-num">1</div><div class="step-content"><strong>Warmup</strong> (first ~1% of training): Start with a tiny learning rate and linearly increase it. This prevents the model from making huge, destructive updates with its initial random weights.</div></div>
+<div class="math-step"><div class="step-num">2</div><div class="step-content"><strong>Cosine decay</strong> (rest of training): Smoothly decrease the learning rate following a cosine curve down to near zero. Early training needs big steps to find the right region; late training needs small steps for fine-tuning.</div></div>
+</div>
+
+<h2 class="reveal">Momentum: The Rolling Ball</h2>
+<div class="analogy reveal"><div class="analogy-icon">⚽</div>
+<p><strong>Imagine a ball rolling down a bumpy hill.</strong> Without momentum, the ball stops at every little bump and dip. With momentum, it builds up speed and rolls right over small bumps toward the real valley. SGD with momentum keeps a running average of past gradients, so the updates have "inertia" — consistent downhill directions get amplified, while noisy oscillations cancel out.</p></div>
+
+<p class="reveal">Momentum alone isn't enough for modern AI. We need optimizers that adapt the learning rate <em>per parameter</em> — which brings us to Adam and Muon in the next two chapters.</p>
+
+<div class="takeaway reveal"><div class="takeaway-label">Key Insight</div><p>Training at scale requires more than basic gradient descent. <strong>Learning rate schedules</strong> (warmup → cosine decay) control how aggressive the updates are over time. <strong>Momentum</strong> smooths out noisy gradients by maintaining inertia. But the real workhorses are adaptive optimizers that adjust the step size for every single parameter individually.</p></div>
+
+<nav class="chapter-footer-nav reveal"><a href="chapter-18.html" class="prev"><span class="dir">← Previous</span><span class="title">Evaluation</span></a><a href="chapter-20.html" class="next"><span class="dir">Next Chapter →</span><span class="title">Adam</span></a></nav>
+</article><script src="script.js"></script></body></html>

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Chapter 26: Tool Use — How AI Thinks</title><link rel="stylesheet" href="style.css"></head><body>
+<nav class="site-nav"><div class="nav-brand">How <em>AI</em> Thinks</div><div class="nav-progress-track"><div class="nav-progress-fill"></div></div><div class="nav-links"><a href="chapter-25.html">← Prev</a><a href="index.html">Contents</a><a href="chapter-27.html">Next →</a></div></nav>
+<article class="chapter-page prose">
+<header class="chapter-header reveal"><div class="chapter-label">Chapter 26</div><h1 class="chapter-title">Tool Use: The Tool Dance</h1><p class="chapter-subtitle">How AI models reach beyond text to search the web, run code, and call APIs — using nothing but token prediction.</p></header>
+
+<p class="reveal">A language model generates tokens. But modern AI assistants can search the web, run Python code, check the weather, and more. How? Through an elegant trick: <strong>special tokens that signal tool use</strong>.</p>
+
+<h2 class="reveal">The Tool Dance</h2>
+<div class="flow reveal" style="flex-direction:column; gap:0.3rem; align-items:stretch; max-width:520px; margin:1.5rem auto;">
+<div class="flow-box" style="background:var(--mint-dim); border:1px solid rgba(52,211,153,.3); color:var(--mint); width:100%; font-size:0.82rem;">User: <span class="tamil">"சென்னையின் வானிலை எப்படி?"</span> (What's the weather in Chennai?)</div>
+<div style="text-align:center; color:var(--text-4); font-size:0.75rem;">↓ model generates tokens...</div>
+<div class="flow-box" style="background:var(--indigo-dim); border:1px solid rgba(129,140,248,.3); color:var(--indigo); width:100%; font-size:0.82rem;">Model outputs: &lt;tool_call&gt; weather(location="Chennai") &lt;/tool_call&gt;</div>
+<div style="text-align:center; color:var(--text-4); font-size:0.75rem;">↓ system intercepts, runs the tool</div>
+<div class="flow-box" style="background:var(--amber-dim); border:1px solid rgba(251,191,36,.3); color:var(--amber); width:100%; font-size:0.82rem;">System: &lt;tool_result&gt; {"temp": "32°C", "condition": "Sunny"} &lt;/tool_result&gt;</div>
+<div style="text-align:center; color:var(--text-4); font-size:0.75rem;">↓ result added to context, model continues</div>
+<div class="flow-box" style="background:var(--mint-dim); border:1px solid rgba(52,211,153,.3); color:var(--mint); width:100%; font-size:0.82rem;">Model: <span class="tamil">"சென்னையில் இப்போது 32°C, வெயில் அடிக்கிறது!"</span> (It's 32°C and sunny in Chennai!)</div>
+</div>
+
+<p class="reveal">The key insight: <strong>the model doesn't "use" tools — it generates tokens that happen to be tool calls.</strong> The surrounding system parses these tokens, executes the tool, and feeds the result back as more tokens. To the model, it's all just next-token prediction.</p>
+
+<p class="reveal">Training the model to use tools requires showing it many examples of the tool dance format during training. It learns when tool use is appropriate, which tool to call, and how to incorporate tool results into its response.</p>
+
+<div class="takeaway reveal"><div class="takeaway-label">Key Insight</div><p><strong>Tool use is just token prediction with special tokens.</strong> The model generates &lt;tool_call&gt; tokens, the system executes the tool and returns results as &lt;tool_result&gt; tokens, and the model continues generating. No special architecture needed — it's all learned through training examples.</p></div>
+
+<nav class="chapter-footer-nav reveal"><a href="chapter-25.html" class="prev"><span class="dir">← Previous</span><span class="title">Mid-Training</span></a><a href="chapter-27.html" class="next"><span class="dir">Next Chapter →</span><span class="title">Supervised Fine-Tuning</span></a></nav>
+</article><script src="script.js"></script></body></html>

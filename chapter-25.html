@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Chapter 25: Mid-Training — How AI Thinks</title><link rel="stylesheet" href="style.css"></head><body>
+<nav class="site-nav"><div class="nav-brand">How <em>AI</em> Thinks</div><div class="nav-progress-track"><div class="nav-progress-fill"></div></div><div class="nav-links"><a href="chapter-24.html">← Prev</a><a href="index.html">Contents</a><a href="chapter-26.html">Next →</a></div></nav>
+<article class="chapter-page prose">
+<header class="chapter-header reveal"><div class="chapter-label">Chapter 25</div><h1 class="chapter-title">Mid-Training</h1><p class="chapter-subtitle">Phase 2: Shifting to higher-quality data — more math, more code, more reasoning, more Tamil.</p></header>
+
+<p class="reveal">After base training, the model understands language generally. Mid-training refines it with a different, higher-quality data mix. Think of it like a student who first reads everything they can find (base training) and then focuses on textbooks and practice problems (mid-training).</p>
+
+<h2 class="reveal">What Changes</h2>
+<div class="card-grid reveal">
+<div class="grid-card" style="border-color:rgba(52,211,153,.3);"><div class="gc-icon">📐</div><h4>More Math</h4><p>Math textbooks, problems with worked solutions, competition math</p></div>
+<div class="grid-card" style="border-color:rgba(129,140,248,.3);"><div class="gc-icon">💻</div><h4>More Code</h4><p>Higher quality code repositories, documentation, coding tutorials</p></div>
+<div class="grid-card" style="border-color:rgba(251,191,36,.3);"><div class="gc-icon">🌍</div><h4>More Languages</h4><p>Increase representation of Tamil, Hindi, and other languages beyond English</p></div>
+<div class="grid-card" style="border-color:rgba(251,113,133,.3);"><div class="gc-icon">📖</div><h4>Higher Quality</h4><p>Filter out low-quality web text, keep curated sources, encyclopaedias, textbooks</p></div>
+</div>
+
+<p class="reveal">The learning rate is <strong>annealed</strong> (gradually reduced) during mid-training — we're fine-tuning what the model already knows rather than learning from scratch. Benchmark scores on math, code, and reasoning improve noticeably during this phase.</p>
+
+<div class="card amber reveal"><div class="card-label">Tamil in Training</div>
+<p>The training corpus includes Tamil text from news sites, Wikipedia Tamil edition, Tamil literature, and web forums. This is how the model learns to generate text like <span class="tamil">தமிழ்நாட்டின் தலைநகரம் சென்னை</span> (The capital of Tamil Nadu is Chennai) — it has seen enough Tamil text to learn the patterns of the language.</p></div>
+
+<div class="takeaway reveal"><div class="takeaway-label">Key Insight</div><p><strong>Mid-training shifts the data mix toward quality over quantity.</strong> The model already knows language basics from base training; now it needs deeper knowledge in math, code, reasoning, and multilingual understanding. The learning rate is lowered so these refinements don't disrupt what was already learned.</p></div>
+
+<nav class="chapter-footer-nav reveal"><a href="chapter-24.html" class="prev"><span class="dir">← Previous</span><span class="title">Base Training</span></a><a href="chapter-26.html" class="next"><span class="dir">Next Chapter →</span><span class="title">Tool Use</span></a></nav>
+</article><script src="script.js"></script></body></html>

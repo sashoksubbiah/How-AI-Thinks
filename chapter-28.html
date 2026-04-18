@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Chapter 28: Reinforcement Learning — How AI Thinks</title><link rel="stylesheet" href="style.css"></head><body>
+<nav class="site-nav"><div class="nav-brand">How <em>AI</em> Thinks</div><div class="nav-progress-track"><div class="nav-progress-fill"></div></div><div class="nav-links"><a href="chapter-27.html">← Prev</a><a href="index.html">Contents</a><a href="chapter-29.html">Next →</a></div></nav>
+<article class="chapter-page prose">
+<header class="chapter-header reveal"><div class="chapter-label">Chapter 28</div><h1 class="chapter-title">Reinforcement Learning</h1><p class="chapter-subtitle">Phase 4: The model generates multiple answers, gets judged, and learns from the results — trial and error at scale.</p></header>
+
+<p class="reveal">SFT showed the model <em>examples</em> of good responses. But there are infinitely many possible responses to any prompt. <strong>Reinforcement Learning (RL)</strong> lets the model explore, generate its own responses, get feedback on quality, and improve.</p>
+
+<h2 class="reveal">How RL Training Works</h2>
+<div class="flow reveal" style="flex-direction:column; gap:0.3rem; align-items:stretch; max-width:500px; margin:1.5rem auto;">
+<div class="flow-box" style="background:var(--mint-dim); border:1px solid rgba(52,211,153,.3); color:var(--mint); width:100%; font-size:0.82rem;">① Give model a prompt (e.g., a math problem)</div>
+<div style="text-align:center; color:var(--text-4); font-size:0.75rem;">↓</div>
+<div class="flow-box" style="background:var(--indigo-dim); border:1px solid rgba(129,140,248,.3); color:var(--indigo); width:100%; font-size:0.82rem;">② Model generates multiple responses (e.g., 8 different attempts)</div>
+<div style="text-align:center; color:var(--text-4); font-size:0.75rem;">↓</div>
+<div class="flow-box" style="background:var(--amber-dim); border:1px solid rgba(251,191,36,.3); color:var(--amber); width:100%; font-size:0.82rem;">③ Judge each response: correct ✅ or wrong ❌</div>
+<div style="text-align:center; color:var(--text-4); font-size:0.75rem;">↓</div>
+<div class="flow-box" style="background:var(--coral-dim); border:1px solid rgba(251,113,133,.3); color:var(--coral); width:100%; font-size:0.82rem;">④ Increase probability of correct responses, decrease wrong ones</div>
+<div style="text-align:center; color:var(--text-4); font-size:0.75rem;">↓ repeat thousands of times</div>
+</div>
+
+<p class="reveal">Using medium temperature (Chapter 9) during generation ensures variety — some attempts will be correct, others wrong. The model learns from the contrast between them.</p>
+
+<h2 class="reveal">Tamil Math Example</h2>
+<div class="demo reveal">
+<div class="demo-header"><div class="demo-icon amber">🧮</div><div class="demo-title">RL in Action</div></div>
+<p class="demo-desc">Prompt: <span class="tamil" style="font-size:1.05rem;">"ஒரு கடையில் 5 ஆப்பிள்கள் ₹120 என்றால், 8 ஆப்பிள்கள் எவ்வளவு?"</span><br><span style="font-size:0.85rem;">(If 5 apples cost ₹120 at a shop, how much do 8 apples cost?)</span></p>
+
+<div style="margin-top:1rem; display:grid; gap:0.75rem;">
+<div class="card mint" style="margin:0;"><div class="card-label">Response A ✅ Correct</div>
+<p style="font-family:var(--font-mono); font-size:0.85rem;">Step 1: Price per apple = ₹120 ÷ 5 = ₹24<br>Step 2: Cost of 8 apples = ₹24 × 8 = <strong>₹192</strong></p>
+<p style="color:var(--mint); font-size:0.85rem;">→ Reward signal: increase probability of this reasoning pattern</p></div>
+
+<div class="card coral" style="margin:0;"><div class="card-label">Response B ❌ Wrong</div>
+<p style="font-family:var(--font-mono); font-size:0.85rem;">The cost would be ₹120 + 3 more apples = ₹120 + ₹72 = <strong>₹192</strong></p>
+<p style="color:var(--text-3); font-size:0.85rem;">Wait — this one also got ₹192 but with wrong reasoning (got lucky). A better judge would check the reasoning, not just the answer.</p></div>
+
+<div class="card coral" style="margin:0;"><div class="card-label">Response C ❌ Wrong</div>
+<p style="font-family:var(--font-mono); font-size:0.85rem;">8 apples cost ₹120 × 2 = <strong>₹240</strong></p>
+<p style="color:var(--coral); font-size:0.85rem;">→ Penalty signal: decrease probability of this reasoning pattern</p></div>
+</div></div>
+
+<h2 class="reveal">GRPO: Group Relative Policy Optimization</h2>
+<p class="reveal">The specific RL algorithm used is called <strong>GRPO</strong>. Instead of judging responses against an absolute standard, it compares responses within a group: correct ones get positive reward, wrong ones get negative reward, relative to the group average. This is more stable than absolute rewards and works well for math and code where correctness can be automatically verified.</p>
+
+<p class="reveal">For subjective tasks (creative writing, helpfulness), a <strong>reward model</strong> — another AI trained on human preferences — judges the quality of responses instead of checking for objective correctness.</p>
+
+<div class="takeaway reveal"><div class="takeaway-label">Key Insight</div><p><strong>Reinforcement learning lets the model learn from its own attempts.</strong> Generate multiple responses, judge them, reinforce the good ones. This is especially powerful for math and code where correctness is verifiable. Combined with SFT, RL is what makes modern AI assistants genuinely skilled at reasoning, problem-solving, and following complex instructions.</p></div>
+
+<nav class="chapter-footer-nav reveal"><a href="chapter-27.html" class="prev"><span class="dir">← Previous</span><span class="title">Supervised Fine-Tuning</span></a><a href="chapter-29.html" class="next"><span class="dir">Next Chapter →</span><span class="title">Hello, Model!</span></a></nav>
+</article><script src="script.js"></script></body></html>

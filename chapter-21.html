@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Chapter 21: Muon — How AI Thinks</title><link rel="stylesheet" href="style.css"></head><body>
+<nav class="site-nav"><div class="nav-brand">How <em>AI</em> Thinks</div><div class="nav-progress-track"><div class="nav-progress-fill"></div></div><div class="nav-links"><a href="chapter-20.html">← Prev</a><a href="index.html">Contents</a><a href="chapter-22.html">Next →</a></div></nav>
+<article class="chapter-page prose">
+<header class="chapter-header reveal"><div class="chapter-label">Chapter 21</div><h1 class="chapter-title">Muon</h1><p class="chapter-subtitle">A newer optimizer that thinks about weight matrices as a whole — not just individual parameters — to find better update directions.</p></header>
+
+<p class="reveal">Adam treats each parameter independently. But the weights in a linear layer form a <strong>matrix</strong>, and there may be better update directions when you consider the matrix as a whole.</p>
+
+<h2 class="reveal">The Key Idea: Matrix-Level Optimization</h2>
+<p class="reveal"><strong>Muon</strong> uses a technique from linear algebra called the <strong>Singular Value Decomposition (SVD)</strong> to find the most effective direction to update an entire weight matrix at once. Think of it like this: Adam adjusts each knob on a mixing board independently, while Muon considers how all the knobs interact and finds coordinated adjustments that are more effective.</p>
+
+<p class="reveal">Specifically, Muon computes the gradient matrix, then uses an iterative approximation (Newton-Schulz iteration) to find a direction that "decorrelates" the gradient — removing redundant information and emphasising the most impactful update directions. This is computationally more expensive per step than Adam, but each step is more effective, so you need fewer total steps.</p>
+
+<div class="card-grid reveal">
+<div class="grid-card" style="border-color:rgba(129,140,248,.3);"><h4 style="color:var(--indigo);">Adam</h4><p>Updates each parameter independently. Simple, proven, widely used. The standard choice.</p></div>
+<div class="grid-card" style="border-color:rgba(52,211,153,.3);"><h4 style="color:var(--mint);">Muon</h4><p>Updates weight matrices holistically. Better directions per step. Newer, used for cutting-edge models.</p></div>
+</div>
+
+<p class="reveal">In practice, the model we'll train uses <strong>both</strong>: Adam for the embedding and final layer weights, Muon for the transformer block weights. This hybrid approach gets the best of both worlds.</p>
+
+<div class="takeaway reveal"><div class="takeaway-label">Key Insight</div><p><strong>Muon optimizes at the matrix level</strong>, finding better update directions by considering how all weights in a layer interact. Combined with Adam for other components, it represents the state of the art in transformer training optimization.</p></div>
+
+<nav class="chapter-footer-nav reveal"><a href="chapter-20.html" class="prev"><span class="dir">← Previous</span><span class="title">Adam</span></a><a href="chapter-22.html" class="next"><span class="dir">Next Chapter →</span><span class="title">RMS Normalization</span></a></nav>
+</article><script src="script.js"></script></body></html>

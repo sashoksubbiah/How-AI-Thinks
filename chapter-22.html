@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Chapter 22: RMS Normalization — How AI Thinks</title><link rel="stylesheet" href="style.css"></head><body>
+<nav class="site-nav"><div class="nav-brand">How <em>AI</em> Thinks</div><div class="nav-progress-track"><div class="nav-progress-fill"></div></div><div class="nav-links"><a href="chapter-21.html">← Prev</a><a href="index.html">Contents</a><a href="chapter-23.html">Next →</a></div></nav>
+<article class="chapter-page prose">
+<header class="chapter-header reveal"><div class="chapter-label">Chapter 22</div><h1 class="chapter-title">RMS Normalization</h1><p class="chapter-subtitle">Keeping numbers in a healthy range as they flow through 20+ layers — the automatic volume control for neural networks.</p></header>
+
+<p class="reveal">As numbers flow through many layers of multiplication and addition, they can grow wildly large or shrink to near-zero. This causes two problems: <strong>exploding gradients</strong> (numbers overflow) and <strong>vanishing gradients</strong> (numbers become too small for the computer to distinguish from zero). Normalization fixes this.</p>
+
+<h2 class="reveal">RMS Norm Step by Step</h2>
+<div class="math-block reveal"><div class="math-title">Normalizing the vector [3.0, 4.0, 0.0]</div>
+<div class="math-step"><div class="step-num">1</div><div class="step-content"><strong>Square each element:</strong> [9.0, 16.0, 0.0]</div></div>
+<div class="math-step"><div class="step-num">2</div><div class="step-content"><strong>Mean of squares:</strong> (9.0 + 16.0 + 0.0) / 3 = <span class="hl">8.333</span></div></div>
+<div class="math-step"><div class="step-num">3</div><div class="step-content"><strong>Square root (= RMS):</strong> √8.333 = <span class="hl">2.887</span></div></div>
+<div class="math-step"><div class="step-num">4</div><div class="step-content"><strong>Divide each element by RMS:</strong> [3.0/2.887, 4.0/2.887, 0.0/2.887] = <span class="result">[1.039, 1.386, 0.0]</span></div></div>
+<div class="math-step"><div class="step-num">5</div><div class="step-content"><strong>Multiply by learned scale γ:</strong> Each dimension has its own learned scale factor. This lets the model adjust the magnitude per dimension if needed.</div></div>
+</div>
+
+<p class="reveal">After normalization, the RMS of the vector is 1.0 — it's been rescaled to a standard magnitude. This happens <strong>before every attention and MLP sublayer</strong> in every transformer block. No matter how large or small the numbers entering a layer, normalization brings them to a consistent scale.</p>
+
+<h2 class="reveal">QK-Norm</h2>
+<p class="reveal">Our model also normalizes the Query and Key vectors before computing attention scores. Without this, some Q-K dot products could be huge (causing softmax to concentrate on a single position) while others are tiny. QK-Norm ensures attention scores are well-behaved across all heads and layers.</p>
+
+<div class="takeaway reveal"><div class="takeaway-label">Key Insight</div><p><strong>RMS Normalization rescales vectors to unit RMS</strong> before each sublayer, preventing numbers from exploding or vanishing as they pass through 20+ layers. It's like an automatic volume control — without it, deep networks would be untrainable. The calculation is simple (square, mean, sqrt, divide) and adds negligible computation.</p></div>
+
+<nav class="chapter-footer-nav reveal"><a href="chapter-21.html" class="prev"><span class="dir">← Previous</span><span class="title">Muon</span></a><a href="chapter-23.html" class="next"><span class="dir">Next Chapter →</span><span class="title">Multiple GPUs</span></a></nav>
+</article><script src="script.js"></script></body></html>

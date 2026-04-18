@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Chapter 23: Multiple GPUs — How AI Thinks</title><link rel="stylesheet" href="style.css"></head><body>
+<nav class="site-nav"><div class="nav-brand">How <em>AI</em> Thinks</div><div class="nav-progress-track"><div class="nav-progress-fill"></div></div><div class="nav-links"><a href="chapter-22.html">← Prev</a><a href="index.html">Contents</a><a href="chapter-24.html">Next →</a></div></nav>
+<article class="chapter-page prose">
+<header class="chapter-header reveal"><div class="chapter-label">Chapter 23</div><h1 class="chapter-title">Multiple GPUs</h1><p class="chapter-subtitle">When one GPU isn't enough — how to split training across 8, 64, or thousands of chips working in parallel.</p></header>
+
+<p class="reveal">Our 560-million parameter model, plus optimizer state (Adam stores 2 extra numbers per parameter), plus the activations saved for backprop, plus the gradient — all need to fit in GPU memory. A single NVIDIA H100 has 80 GB. For our model, one GPU is enough. But for larger models (GPT-3: 175 billion parameters), you need many GPUs working together.</p>
+
+<h2 class="reveal">Three Parallelism Strategies</h2>
+<div class="card-grid reveal">
+<div class="grid-card" style="border-color:rgba(52,211,153,.3);"><div class="gc-icon">📦</div><h4>Data Parallelism</h4><p>Copy the <em>entire model</em> to each GPU. Each GPU processes a different batch of data. After each step, GPUs synchronize their gradients (average them) and apply the same weight update. Simple and effective.</p></div>
+<div class="grid-card" style="border-color:rgba(129,140,248,.3);"><div class="gc-icon">✂️</div><h4>Model Parallelism</h4><p>Split the model's layers across GPUs. GPU 1 runs layers 1–10, GPU 2 runs layers 11–20. Data flows between GPUs. Needed when the model is too big for one GPU's memory.</p></div>
+<div class="grid-card" style="border-color:rgba(251,191,36,.3);"><div class="gc-icon">🔗</div><h4>FSDP (Fully Sharded)</h4><p>Shard both model weights and optimizer state across GPUs. Each GPU stores only 1/Nth of the parameters. They share pieces as needed during forward/backward passes. Maximizes memory efficiency.</p></div>
+</div>
+
+<h2 class="reveal">Practical Setup</h2>
+<p class="reveal">For our 32-layer model, we'll use <strong>8 NVIDIA H100 GPUs</strong> in a single node, connected by high-speed NVLink (900 GB/s between GPUs). Using FSDP, each GPU stores 1/8th of the weights and optimizer state. Cost: roughly $2–3 per GPU per hour, so 8 GPUs for a multi-day training run costs $500–2,000.</p>
+
+<p class="reveal">The largest models (GPT-4, Claude) use <strong>thousands</strong> of GPUs across multiple data centres, with sophisticated combinations of all three parallelism strategies plus pipeline parallelism (different batches at different stages simultaneously). Training costs run into tens of millions of dollars.</p>
+
+<div class="takeaway reveal"><div class="takeaway-label">Key Insight</div><p>When one GPU isn't enough, training splits across multiple GPUs using <strong>data parallelism</strong> (same model, different data), <strong>model parallelism</strong> (different layers on different GPUs), and <strong>FSDP</strong> (shard everything). Our 32-layer model uses 8 H100 GPUs. The biggest models use thousands.</p></div>
+
+<nav class="chapter-footer-nav reveal"><a href="chapter-22.html" class="prev"><span class="dir">← Previous</span><span class="title">RMS Normalization</span></a><a href="chapter-24.html" class="next"><span class="dir">Next Chapter →</span><span class="title">Base Training</span></a></nav>
+</article><script src="script.js"></script></body></html>

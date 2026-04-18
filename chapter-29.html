@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Chapter 29: Hello, Model! — How AI Thinks</title><link rel="stylesheet" href="style.css">
+<style>
+.chat-bubble{padding:1rem 1.25rem;border-radius:14px;margin:0.5rem 0;max-width:85%;}
+.chat-user{background:var(--indigo-dim);border:1px solid rgba(129,140,248,.2);margin-left:auto;text-align:right;}
+.chat-ai{background:var(--mint-dim);border:1px solid rgba(52,211,153,.2);}
+.typing-cursor{border-right:2px solid var(--mint);padding-right:2px;animation:blink 0.8s step-end infinite;}
+@keyframes blink{50%{border-color:transparent;}}
+</style></head><body>
+<nav class="site-nav"><div class="nav-brand">How <em>AI</em> Thinks</div><div class="nav-progress-track"><div class="nav-progress-fill"></div></div><div class="nav-links"><a href="chapter-28.html">← Prev</a><a href="index.html">Contents</a><a href="chapter-30.html">Next →</a></div></nav>
+<article class="chapter-page prose">
+<header class="chapter-header reveal"><div class="chapter-label">Chapter 29</div><h1 class="chapter-title">Hello, Model! 👋</h1><p class="chapter-subtitle">After base training, mid-training, supervised fine-tuning, and reinforcement learning — the moment of first contact.</p></header>
+
+<p class="reveal">We started with 1.5 billion random numbers. We fed the model trillions of tokens from the internet. We refined it with high-quality data, showed it example conversations, and let it learn from its own mistakes through reinforcement learning. Days of GPU computation, thousands of dollars, and millions of gradient updates later…</p>
+
+<p class="reveal">It's time to say hello.</p>
+
+<div class="demo reveal" style="max-width:500px; margin:2rem auto;">
+<div class="demo-header"><div class="demo-icon mint">💬</div><div class="demo-title">First Conversation</div></div>
+<div style="display:flex; flex-direction:column;">
+<div class="chat-bubble chat-user"><strong>You:</strong> hello</div>
+<div class="chat-bubble chat-ai"><strong>AI:</strong> <span id="helloText" class="typing-cursor"></span></div>
+</div>
+</div>
+
+<p class="reveal">That's it. From random weights to a working conversational AI. Every single concept we covered — tokens, embeddings, attention, backpropagation, gradient descent, matrices, GPUs, loss functions, optimizers, skip connections, RMS normalization, the KV cache — they all came together to produce a machine that can hold a conversation.</p>
+
+<h2 class="reveal">Testing the Model</h2>
+<p class="reveal">Let's try a few more prompts to see what our model can do:</p>
+
+<div class="demo reveal" style="max-width:550px; margin:2rem auto;">
+<div style="display:flex; flex-direction:column; gap:0.25rem;">
+<div class="chat-bubble chat-user"><strong>You:</strong> <span class="tamil">தமிழ்நாட்டின் தலைநகரம் எது?</span></div>
+<div class="chat-bubble chat-ai"><strong>AI:</strong> <span class="tamil">தமிழ்நாட்டின் தலைநகரம் சென்னை.</span> Chennai is the capital city of Tamil Nadu, located on the southeastern coast of India.</div>
+</div>
+</div>
+
+<div class="demo reveal" style="max-width:550px; margin:2rem auto;">
+<div style="display:flex; flex-direction:column; gap:0.25rem;">
+<div class="chat-bubble chat-user"><strong>You:</strong> Write a Python function to check if a number is prime.</div>
+<div class="chat-bubble chat-ai"><strong>AI:</strong><div class="code-block" style="margin:0.5rem 0 0; font-size:0.8rem;">def is_prime(n):
+    if n < 2:
+        return False
+    for i in range(2, int(n**0.5) + 1):
+        if n % i == 0:
+            return False
+    return True</div></div>
+</div>
+</div>
+
+<p class="reveal">The model isn't perfect — it's small (1.5 billion parameters) compared to production models (hundreds of billions). It will make mistakes, especially on complex reasoning or obscure knowledge. But the architecture, the training procedure, and the fundamental mechanisms are <strong>exactly the same</strong> as what powers ChatGPT, Claude, Gemini, and every other modern AI assistant. They're just bigger.</p>
+
+<div class="takeaway reveal"><div class="takeaway-label">The Journey Complete</div><p>From counting word pairs (Chapter 2) to training a transformer model that can converse in multiple languages, write code, and solve math problems — you now understand <strong>how AI thinks</strong>. Not at a hand-waving level, but at the level of actual numbers, actual calculations, actual architecture. The magic is real, but it's not magic — it's math, engineering, and an extraordinary amount of computation.</p></div>
+
+<nav class="chapter-footer-nav reveal"><a href="chapter-28.html" class="prev"><span class="dir">← Previous</span><span class="title">Reinforcement Learning</span></a><a href="chapter-30.html" class="next"><span class="dir">Next Chapter →</span><span class="title">Being Precise About Precision</span></a></nav>
+</article><script src="script.js"></script>
+<script>
+// Typing effect for hello
+const responses = ["Hello! How can I help you today?", "வணக்கம்! நான் உங்களுக்கு எப்படி உதவ முடியும்?", "Hello! I'm a language model trained on text from the internet.", "Hi there! I'd be happy to help with any questions you have."];
+let rIdx = 0;
+const el = document.getElementById('helloText');
+function typeResp() {
+  const text = responses[rIdx % responses.length];
+  let i = 0; el.textContent = '';
+  const iv = setInterval(() => {
+    el.textContent += text[i]; i++;
+    if (i >= text.length) { clearInterval(iv); setTimeout(() => { rIdx++; typeResp(); }, 3000); }
+  }, 45);
+}
+const obs = new IntersectionObserver(e => { if(e[0].isIntersecting){typeResp();obs.disconnect();} });
+obs.observe(el);
+</script></body></html>

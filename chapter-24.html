@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Chapter 24: Base Training — How AI Thinks</title><link rel="stylesheet" href="style.css"></head><body>
+<nav class="site-nav"><div class="nav-brand">How <em>AI</em> Thinks</div><div class="nav-progress-track"><div class="nav-progress-fill"></div></div><div class="nav-links"><a href="chapter-23.html">← Prev</a><a href="index.html">Contents</a><a href="chapter-25.html">Next →</a></div></nav>
+<article class="chapter-page prose">
+<header class="chapter-header reveal"><div class="chapter-label">Chapter 24</div><h1 class="chapter-title">Base Training</h1><p class="chapter-subtitle">Phase 1: Feed the model trillions of tokens from the internet and teach it to predict language.</p></header>
+
+<p class="reveal">It's time. Everything we've learned — tokens, embeddings, attention, backpropagation, optimizers, GPUs — comes together now. We're going to train a 32-layer transformer model from scratch.</p>
+
+<h2 class="reveal">The Training Data</h2>
+<p class="reveal">Base training uses a massive corpus of text scraped from the internet. Common Crawl, a non-profit, maintains free web crawl data. The training mix typically includes:</p>
+<div class="card-grid reveal">
+<div class="grid-card"><div class="gc-icon">🌐</div><h4>Web Text</h4><p>Filtered web pages — the bulk of training data (~60-70%)</p></div>
+<div class="grid-card"><div class="gc-icon">📚</div><h4>Books</h4><p>Published books across genres (~10%)</p></div>
+<div class="grid-card"><div class="gc-icon">💻</div><h4>Code</h4><p>Open-source code from GitHub (~10-15%)</p></div>
+<div class="grid-card"><div class="gc-icon">📰</div><h4>Quality Text</h4><p>Wikipedia, academic papers, curated sources (~10-15%)</p></div>
+</div>
+
+<p class="reveal">The data is tokenized, shuffled, and packed into sequences of fixed length (e.g., 2048 tokens). Multiple documents may be concatenated into a single sequence, separated by special tokens.</p>
+
+<h2 class="reveal">Hyperparameters</h2>
+<div class="demo reveal">
+<table class="data-table">
+<thead><tr><th>Setting</th><th>Value</th><th>Why</th></tr></thead>
+<tbody>
+<tr><td>Layers</td><td>32</td><td>Deeper = smarter (if you have enough data)</td></tr>
+<tr><td>D (embedding dim)</td><td>2,048</td><td>64 × layers = 2,048</td></tr>
+<tr><td>Vocab size V</td><td>65,536</td><td>Covers common words in many languages</td></tr>
+<tr><td>Sequence length T</td><td>2,048</td><td>Each training example is 2048 tokens (~4 pages)</td></tr>
+<tr><td>Batch size</td><td>32 sequences × 8 GPUs</td><td>= 524,288 tokens per step</td></tr>
+<tr><td>Learning rate</td><td>6×10⁻⁴ peak</td><td>With warmup + cosine decay</td></tr>
+<tr><td>Total tokens</td><td>~10 billion</td><td>Multiple passes through the data</td></tr>
+<tr><td>Training time</td><td>~3-5 days on 8× H100</td><td>24/7 continuous computation</td></tr>
+<tr><td>Cost</td><td>~$500-1,000</td><td>At $2-3/GPU/hour</td></tr>
+</tbody></table></div>
+
+<h2 class="reveal">What Happens During Training</h2>
+<p class="reveal">The training loop runs continuously for days:</p>
+<div class="flow reveal" style="flex-direction:column; gap:0.3rem; align-items:stretch; max-width:450px; margin:1.5rem auto;">
+<div class="flow-box" style="background:var(--mint-dim); border:1px solid rgba(52,211,153,.3); color:var(--mint); width:100%; font-size:0.82rem;">Load batch of 524,288 tokens</div>
+<div style="text-align:center; color:var(--text-4); font-size:0.75rem;">↓</div>
+<div class="flow-box" style="background:var(--indigo-dim); border:1px solid rgba(129,140,248,.3); color:var(--indigo); width:100%; font-size:0.82rem;">Forward pass → predictions for all tokens</div>
+<div style="text-align:center; color:var(--text-4); font-size:0.75rem;">↓</div>
+<div class="flow-box" style="background:var(--coral-dim); border:1px solid rgba(251,113,133,.3); color:var(--coral); width:100%; font-size:0.82rem;">Cross-entropy loss against actual next tokens</div>
+<div style="text-align:center; color:var(--text-4); font-size:0.75rem;">↓</div>
+<div class="flow-box" style="background:var(--amber-dim); border:1px solid rgba(251,191,36,.3); color:var(--amber); width:100%; font-size:0.82rem;">Backward pass → gradients for all ~1.5B parameters</div>
+<div style="text-align:center; color:var(--text-4); font-size:0.75rem;">↓</div>
+<div class="flow-box" style="background:var(--cyan-dim); border:1px solid rgba(34,211,238,.3); color:var(--cyan); width:100%; font-size:0.82rem;">Adam/Muon update weights → sync across 8 GPUs</div>
+<div style="text-align:center; color:var(--text-4); font-size:0.75rem;">↓ ~0.5 seconds per step, ~50,000 steps total ↓ repeat</div>
+</div>
+
+<p class="reveal">As training progresses, the loss drops from ~11 (random guessing) down to ~3-4 (the model understands language). Periodically, we checkpoint the model (save all weights to disk) and run benchmark evaluations.</p>
+
+<h2 class="reveal">What the Base Model Can Do</h2>
+<p class="reveal">After base training, the model can complete text fluently. Give it "The history of Chennai" and it'll write a decent paragraph about the city. But it's not yet a <em>helpful assistant</em> — it might continue your prompt with Wikipedia-style text, or repeat itself, or ignore your question entirely. Turning it into ChatGPT-like assistant requires the next phases: mid-training, supervised fine-tuning, and reinforcement learning.</p>
+
+<div class="takeaway reveal"><div class="takeaway-label">Key Insight</div><p><strong>Base training is where the model learns language and world knowledge</strong> — by predicting next tokens on trillions of words from the internet, books, and code. It runs for days on 8 GPUs, processing half a million tokens every half-second. The result is a model that understands language but isn't yet a helpful assistant.</p></div>
+
+<nav class="chapter-footer-nav reveal"><a href="chapter-23.html" class="prev"><span class="dir">← Previous</span><span class="title">Multiple GPUs</span></a><a href="chapter-25.html" class="next"><span class="dir">Next Chapter →</span><span class="title">Mid-Training</span></a></nav>
+</article><script src="script.js"></script></body></html>
