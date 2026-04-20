@@ -1,377 +1,770 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Chapter 3: Training a Model — How AI Thinks</title>
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chapter 3: Cricket, Chai & AI — How AI Thinks</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .chip { display:inline-block; font-family:var(--font-mono); font-weight:600; padding:1px 7px; border-radius:5px; white-space:nowrap; }
+    .chip-a { color:var(--amber);  background:var(--amber-dim);  }
+    .chip-m { color:var(--mint);   background:var(--mint-dim);   }
+    .chip-i { color:var(--indigo); background:var(--indigo-dim); }
+    .chip-r { color:var(--coral);  background:var(--coral-dim);  }
+
+    .match-cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:1rem; margin:1.5rem 0; }
+    .match-card { background:var(--bg-elevated); border:1px solid var(--border-subtle); border-radius:14px; padding:1.1rem 1.25rem; position:relative; overflow:hidden; transition:border-color 0.2s; }
+    .match-card:hover { border-color:rgba(52,211,153,0.35); }
+    .match-card::before { content:''; position:absolute; top:0; left:0; width:3px; height:100%; }
+    .mc1::before { background:var(--mint);   }
+    .mc2::before { background:var(--indigo); }
+    .mc3::before { background:var(--amber);  }
+    .mc-lbl { font-family:var(--font-mono); font-size:0.68rem; text-transform:uppercase; letter-spacing:2px; color:var(--text-3); margin-bottom:0.5rem; }
+    .mc-name { font-family:var(--font-display); font-size:1.05rem; color:var(--text-1); margin-bottom:0.6rem; }
+    .mc-stats { font-family:var(--font-mono); font-size:0.82rem; color:var(--text-2); line-height:1.9; }
+    .mc-row { display:flex; justify-content:space-between; }
+    .mc-key { color:var(--text-3); }
+
+    .formula-box { background:var(--bg-elevated); border:1px solid var(--indigo); border-radius:14px; padding:1.5rem 1.75rem; margin:1.5rem 0; text-align:center; }
+    .formula-main { font-family:var(--font-mono); font-size:1.1rem; color:var(--text-1); line-height:2.1; }
+    .fparts { display:flex; justify-content:center; gap:1.25rem; margin-top:1rem; flex-wrap:wrap; }
+    .fp { padding:0.6rem 1rem; border-radius:10px; font-family:var(--font-mono); font-size:0.82rem; text-align:center; }
+
+    .calc-walk { background:var(--bg-elevated); border-radius:12px; padding:1.25rem 1.5rem; margin:1rem 0; font-family:var(--font-mono); font-size:0.9rem; line-height:2; color:var(--text-2); }
+    .cl { display:flex; align-items:center; gap:0.4rem; flex-wrap:wrap; padding:0.2rem 0.4rem; border-radius:6px; }
+    .cl.hl { background:rgba(52,211,153,0.07); }
+    .eq { color:var(--text-4); }
+
+    .quiz-box { background:var(--bg-elevated); border:1px solid var(--border-subtle); border-radius:14px; padding:1.5rem; margin:1.5rem 0; }
+    .quiz-q { font-size:1rem; color:var(--text-1); margin-bottom:1rem; font-weight:500; }
+    .quiz-opts { display:flex; flex-direction:column; gap:0.5rem; }
+    .qo { padding:0.65rem 1rem; border:1px solid var(--border-subtle); border-radius:9px; cursor:pointer; font-size:0.9rem; color:var(--text-2); background:transparent; text-align:left; font-family:var(--font-body); transition:all 0.2s; }
+    .qo:hover:not(:disabled) { border-color:var(--mint); color:var(--mint); }
+    .qo.correct { border-color:var(--mint);  background:var(--mint-dim);  color:var(--mint);  }
+    .qo.wrong   { border-color:var(--coral); background:var(--coral-dim); color:var(--coral); }
+    .quiz-fb { margin-top:0.75rem; font-size:0.88rem; color:var(--text-2); display:none; }
+    .quiz-fb.show { display:block; }
+
+    .playground { background:var(--bg-surface); border:1px solid var(--border-medium); border-radius:16px; padding:1.75rem; margin:1.75rem 0; }
+    .wgrid { display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1.25rem; }
+    @media(max-width:500px){.wgrid{grid-template-columns:1fr;}}
+    .wcard { background:var(--bg-elevated); border:1px solid var(--border-subtle); border-radius:12px; padding:1rem 1.1rem; }
+    .wcard h4 { font-family:var(--font-mono); font-size:0.72rem; text-transform:uppercase; letter-spacing:1.5px; color:var(--text-3); margin-bottom:0.35rem; }
+    .wbig { font-family:var(--font-display); font-size:2rem; line-height:1; margin-bottom:0.5rem; }
+    .wa .wbig { color:var(--mint); }
+    .wb .wbig { color:var(--indigo); }
+
+    .ptable { width:100%; border-collapse:collapse; margin-top:1rem; font-size:0.82rem; }
+    .ptable th { font-family:var(--font-mono); font-size:0.68rem; text-transform:uppercase; letter-spacing:1.5px; color:var(--mint); padding:0.5rem 0.4rem; border-bottom:1px solid var(--border-medium); text-align:left; }
+    .ptable td { padding:0.45rem 0.4rem; border-bottom:1px solid var(--border-subtle); font-family:var(--font-mono); font-size:0.8rem; color:var(--text-2); }
+    .ptable tr:hover td { background:rgba(52,211,153,0.03); }
+    .ehi { color:var(--coral); }
+    .elo { color:var(--mint);  }
+
+    .lossmeter { margin-top:1.25rem; padding:1rem; background:var(--bg-elevated); border-radius:12px; border:1px solid var(--border-subtle); }
+    .llbl { font-family:var(--font-mono); font-size:0.7rem; text-transform:uppercase; letter-spacing:2px; color:var(--text-3); margin-bottom:0.4rem; }
+    .lnum { font-family:var(--font-display); font-size:2rem; font-weight:700; transition:color 0.4s; }
+    .lbad  { color:var(--coral); }
+    .lgood { color:var(--mint);  }
+    .ltrack { height:8px; background:rgba(255,255,255,0.05); border-radius:4px; margin-top:0.5rem; overflow:hidden; }
+    .lfill  { height:100%; border-radius:4px; background:linear-gradient(90deg,var(--mint),var(--coral)); transition:width 0.4s; }
+
+    .dcanvas-wrap { width:100%; background:rgba(0,0,0,0.25); border:1px solid var(--border-subtle); border-radius:12px; overflow:hidden; }
+    .tgrid { display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1rem; }
+    @media(max-width:460px){.tgrid{grid-template-columns:1fr;}}
+    .tcard { background:var(--bg-elevated); border-radius:10px; padding:0.9rem 1rem; }
+    .tlbl { font-family:var(--font-mono); font-size:0.68rem; text-transform:uppercase; letter-spacing:1px; color:var(--text-3); margin-bottom:0.25rem; }
+    .tval { font-family:var(--font-display); font-size:1.8rem; line-height:1; }
+    .gdctrls { display:flex; gap:0.75rem; flex-wrap:wrap; margin:0.75rem 0; }
+    .stepctr { font-family:var(--font-mono); font-size:0.82rem; color:var(--text-3); padding:7px 12px; background:var(--bg-elevated); border-radius:7px; display:flex; align-items:center; gap:0.4rem; }
+    .stepctr span { color:var(--mint); font-weight:600; }
+
+    .sdots { display:flex; gap:5px; margin-bottom:2rem; flex-wrap:wrap; }
+    .sd { width:7px; height:7px; border-radius:50%; background:var(--border-medium); transition:all 0.3s; }
+    .sd.done   { background:var(--mint); }
+    .sd.active { background:var(--indigo); transform:scale(1.5); }
+
+    .confetti-layer { position:fixed; inset:0; pointer-events:none; z-index:99999; }
+    .cp { position:absolute; width:9px; height:9px; border-radius:2px; animation:cfall 2.6s ease-in forwards; }
+    @keyframes cfall { from{transform:translateY(-20px) rotate(0deg);opacity:1} to{transform:translateY(105vh) rotate(720deg);opacity:0} }
+  </style>
 </head>
 <body>
+
+<div class="confetti-layer" id="cfLayer"></div>
+
 <nav class="site-nav">
-  <div class="nav-brand">How <em>AI</em> Thinks</div>
+  <div class="nav-brand"><em>How AI Thinks</em></div>
   <div class="nav-progress-track"><div class="nav-progress-fill"></div></div>
   <div class="nav-links">
-    <a href="chapter-2.html">← Prev</a>
-    <a href="index.html">Contents</a>
-    <a href="chapter-4.html">Next →</a>
+    <a href="#intro">Intro</a>
+    <a href="#model">Model</a>
+    <a href="#loss">Loss</a>
+    <a href="#grad">Gradient</a>
+    <a href="#train">Train</a>
   </div>
 </nav>
 
-<article class="chapter-page prose">
-  <header class="chapter-header reveal">
-    <div class="chapter-label">Chapter 03</div>
-    <h1 class="chapter-title">Training a Model: Predicting Feathers</h1>
-    <p class="chapter-subtitle">Building a prediction machine, measuring how wrong it is, and using calculus to make it better — all with real numbers.</p>
+<main class="chapter-page">
+
+  <div class="sdots" id="sdots">
+    <div class="sd active"></div><div class="sd"></div><div class="sd"></div>
+    <div class="sd"></div><div class="sd"></div><div class="sd"></div>
+    <div class="sd"></div><div class="sd"></div><div class="sd"></div>
+  </div>
+
+  <header class="chapter-header" id="intro">
+    <div class="chapter-label">Chapter 3</div>
+    <h1 class="chapter-title">Cricket, Chai & AI 🏏☕</h1>
+    <p class="chapter-subtitle">How a computer learns from cricket matches to predict chai sales — one small mistake at a time.</p>
   </header>
 
-  <p class="reveal">In Chapter 2 we talked about models for predicting words. Now we're going to build a model to predict something simpler: <strong>the number of feathers on a turkey</strong>. Don't ask — the point is to keep the numbers small enough that we can follow every calculation. You'll have to trust that these same ideas scale all the way up to predicting words in language models with billions of parameters.</p>
+  <article class="prose">
 
-  <h2 class="reveal">The Setup</h2>
+    <p>Imagine you run a small chai stall just outside the MA Chidambaram Stadium in Chennai. On big match days you sell thousands of cups. On quieter matches, far fewer. Before each match begins, you want to predict exactly how many cups to prepare so nothing goes to waste.</p>
 
-  <p class="reveal">Think of our model as a machine. It takes two inputs — the <strong>height</strong> and <strong>length</strong> of a turkey — and gives one output: its prediction for the number of feathers.</p>
-
-  <div class="flow reveal">
-    <div class="flow-box" style="background:var(--mint-dim); border:1px solid rgba(52,211,153,0.3); color:var(--mint);">Height</div>
-    <div class="flow-arrow">→</div>
-    <div class="flow-box" style="background:var(--indigo-dim); border:1px solid rgba(129,140,248,0.3); color:var(--indigo);">🧠 Model</div>
-    <div class="flow-arrow">→</div>
-    <div class="flow-box" style="background:var(--amber-dim); border:1px solid rgba(251,191,36,0.3); color:var(--amber);">Predicted Feathers</div>
-    <div class="flow-arrow">←</div>
-    <div class="flow-box" style="background:var(--mint-dim); border:1px solid rgba(52,211,153,0.3); color:var(--mint);">Length</div>
-  </div>
-
-  <p class="reveal">The model's formula is simple: multiply the height by some number (call it <strong>w₁</strong>), multiply the length by another number (<strong>w₂</strong>), and add them together:</p>
-
-  <div class="card mint reveal">
-    <p style="font-family:var(--font-mono); font-size:1.05rem; color:var(--text-1); text-align:center; margin:0;">Prediction = height × w₁ + length × w₂</p>
-  </div>
-
-  <p class="reveal">The numbers w₁ and w₂ are called <strong>weights</strong> — they're the knobs we can turn to make our model better or worse. Our data comes from three turkeys:</p>
-
-  <div class="demo reveal">
-    <table class="data-table">
-      <thead><tr><th>Turkey</th><th>Height (m)</th><th>Length (m)</th><th>Actual Feathers</th></tr></thead>
-      <tbody>
-        <tr><td>#1</td><td>1.00</td><td>1.50</td><td>5,000</td></tr>
-        <tr><td>#2</td><td>0.75</td><td>1.25</td><td>3,500</td></tr>
-        <tr><td>#3</td><td>1.25</td><td>1.00</td><td>4,500</td></tr>
-      </tbody>
-    </table>
-    <p style="font-size:0.82rem; color:var(--text-3);">This data is made up for this example — not from real turkeys!</p>
-  </div>
-
-  <p class="reveal">If our model is any good, then plugging in the heights and lengths should give predictions close to the actual feather counts.</p>
-
-  <h2 class="reveal">Step 1: Start with Random Weights</h2>
-
-  <p class="reveal">Let's just pick some numbers: <strong>w₁ = 1000</strong> and <strong>w₂ = 3000</strong>. Now calculate predictions for all three turkeys:</p>
-
-  <div class="math-block reveal">
-    <div class="math-title">Forward Pass — Computing Predictions</div>
-    <div class="math-step">
-      <div class="step-num">1</div>
-      <div class="step-content">Turkey #1: 1.00 × 1000 + 1.50 × 3000 = 1000 + 4500 = <span class="result">5,500</span></div>
-    </div>
-    <div class="math-step">
-      <div class="step-num">2</div>
-      <div class="step-content">Turkey #2: 0.75 × 1000 + 1.25 × 3000 = 750 + 3750 = <span class="result">4,500</span></div>
-    </div>
-    <div class="math-step">
-      <div class="step-num">3</div>
-      <div class="step-content">Turkey #3: 1.25 × 1000 + 1.00 × 3000 = 1250 + 3000 = <span class="result">4,250</span></div>
-    </div>
-  </div>
-
-  <p class="reveal">Not bad for random weights! Turkey #1 is predicted at 5,500 (actual: 5,000). But how do we turn "not bad" into a single number?</p>
-
-  <h2 class="reveal">Step 2: Compute the Error and Loss</h2>
-
-  <p class="reveal">For each turkey, <strong>error = prediction − actual</strong>. Positive means we overshot, negative means we undershot:</p>
-
-  <div class="math-block reveal">
-    <div class="math-title">Error Calculation</div>
-    <div class="math-step">
-      <div class="step-num">1</div>
-      <div class="step-content">Turkey #1: 5,500 − 5,000 = <span class="hl">+500</span> (overshot by 500)</div>
-    </div>
-    <div class="math-step">
-      <div class="step-num">2</div>
-      <div class="step-content">Turkey #2: 4,500 − 3,500 = <span class="hl">+1,000</span> (overshot by 1000)</div>
-    </div>
-    <div class="math-step">
-      <div class="step-num">3</div>
-      <div class="step-content">Turkey #3: 4,250 − 4,500 = <span class="hl">−250</span> (undershot by 250)</div>
-    </div>
-  </div>
-
-  <p class="reveal">We want a single number that tells us how bad our overall prediction is. If we just add the errors, a big positive and a big negative could cancel out to zero even though both predictions are terrible. Solution: <strong>square each error</strong> first (which makes negatives positive and penalizes big errors more), then add them up. This sum is called the <strong>loss</strong>.</p>
-
-  <div class="math-block reveal">
-    <div class="math-title">Loss Calculation</div>
-    <div class="math-step">
-      <div class="step-num">1</div>
-      <div class="step-content">Squared error #1: 500² = 500 × 500 = <span class="hl">250,000</span></div>
-    </div>
-    <div class="math-step">
-      <div class="step-num">2</div>
-      <div class="step-content">Squared error #2: 1000² = 1000 × 1000 = <span class="hl">1,000,000</span></div>
-    </div>
-    <div class="math-step">
-      <div class="step-num">3</div>
-      <div class="step-content">Squared error #3: (−250)² = 250 × 250 = <span class="hl">62,500</span></div>
-    </div>
-    <div class="math-step">
-      <div class="step-num">Σ</div>
-      <div class="step-content"><strong>Loss</strong> = 250,000 + 1,000,000 + 62,500 = <span class="result">1,312,500</span></div>
-    </div>
-  </div>
-
-  <div class="takeaway reveal">
-    <div class="takeaway-label">Why Loss Matters</div>
-    <p>Loss is a single number that says "how wrong is our model overall?" A loss of zero means perfect predictions. The entire goal of training is to make this number as small as possible. If we tweak our weights and the loss goes down — good. If it goes up — we moved in the wrong direction.</p>
-  </div>
-
-  <h2 class="reveal">Step 3: Which Direction to Nudge?</h2>
-
-  <p class="reveal">We could guess new weights randomly, but it would be nice to know: if we increase w₁ a little bit, will the loss go up (bad) or down (good)? This is where <strong>derivatives</strong> from calculus come in.</p>
-
-  <div class="analogy reveal">
-    <div class="analogy-icon">🏔️</div>
-    <p><strong>Analogy:</strong> Imagine you're blindfolded on a hillside and want to reach the lowest point. You can't see, but you can feel which direction the ground slopes beneath your feet. If it slopes down to the left, take a step left. The derivative tells us the slope — it tells us which direction is "downhill" for our loss.</p>
-  </div>
-
-  <p class="reveal">Remember from high school: if f(x) = x², the derivative is 2x. At x = 3, the derivative is 6, meaning a tiny increase in x causes f(x) to increase by about 6 times that amount. We use the same idea for our loss — except we compute <strong>partial derivatives</strong>, one for each weight.</p>
-
-  <div class="math-block reveal">
-    <div class="math-title">Partial Derivatives of Loss</div>
-    <div class="math-step">
-      <div class="step-num">w₁</div>
-      <div class="step-content">∂loss/∂w₁ at (w₁=1000, w₂=3000) = <span class="result">1,875</span><br><span style="color:var(--text-3); font-size:0.82rem;">Positive → increasing w₁ increases loss → we should <strong>decrease</strong> w₁</span></div>
-    </div>
-    <div class="math-step">
-      <div class="step-num">w₂</div>
-      <div class="step-content">∂loss/∂w₂ at (w₁=1000, w₂=3000) = <span class="result">3,500</span><br><span style="color:var(--text-3); font-size:0.82rem;">Positive → increasing w₂ increases loss → we should <strong>decrease</strong> w₂</span></div>
-    </div>
-  </div>
-
-  <h2 class="reveal">Step 4: Update the Weights</h2>
-
-  <p class="reveal">We know which direction to move each weight. But by how much? Too little and we barely improve. Too much and we might overshoot. We use a <strong>learning rate</strong> (let's set it to 0.01) that controls the step size:</p>
-
-  <div class="math-block reveal">
-    <div class="math-title">Weight Update</div>
-    <div class="math-step">
-      <div class="step-num">1</div>
-      <div class="step-content">New w₁ = 1000 − (0.01 × 1,875) = 1000 − 18.75 = <span class="result">981.25</span></div>
-    </div>
-    <div class="math-step">
-      <div class="step-num">2</div>
-      <div class="step-content">New w₂ = 3000 − (0.01 × 3,500) = 3000 − 35.00 = <span class="result">2,965</span></div>
-    </div>
-    <div class="math-step">
-      <div class="step-num">✓</div>
-      <div class="step-content">New loss with these weights: <span class="result">1,190,625</span> — down from 1,312,500!</div>
-    </div>
-  </div>
-
-  <p class="reveal">It worked! The loss went down. Now we <strong>repeat</strong> — compute new partial derivatives at the new weights, update again, and keep going. This process of repeatedly computing gradients and nudging weights is called <strong>gradient descent</strong>.</p>
-
-  <h2 class="reveal">After 1,000 Steps</h2>
-
-  <p class="reveal">After repeating this process 1,000 times, our weights converge to approximately <strong>w₁ ≈ 2,311</strong> and <strong>w₂ ≈ 1,633</strong>, with a loss of about <strong>133,190</strong>. Much better than the 1,312,500 we started with!</p>
-
-  <div class="demo reveal">
-    <table class="data-table">
-      <thead><tr><th>Step</th><th>w₁</th><th>w₂</th><th>Loss</th></tr></thead>
-      <tbody>
-        <tr><td>0</td><td>1,000</td><td>3,000</td><td style="color:var(--coral)">1,312,500</td></tr>
-        <tr><td>1</td><td>981</td><td>2,965</td><td>1,190,625</td></tr>
-        <tr><td>2</td><td>964</td><td>2,933</td><td>1,085,439</td></tr>
-        <tr><td>10</td><td>851</td><td>2,719</td><td>598,817</td></tr>
-        <tr><td>50</td><td>737</td><td>2,271</td><td>188,163</td></tr>
-        <tr><td>100</td><td>1,002</td><td>2,016</td><td>143,449</td></tr>
-        <tr><td>500</td><td>2,211</td><td>1,699</td><td>133,351</td></tr>
-        <tr><td>1,000</td><td style="color:var(--mint)">2,311</td><td style="color:var(--mint)">1,633</td><td style="color:var(--mint)">133,190</td></tr>
-      </tbody>
-    </table>
-    <p style="font-size:0.82rem; color:var(--text-3);">Notice w₁ goes down initially then back up — the gradient descent path isn't always a straight line to the optimum. It's like walking downhill on uneven terrain.</p>
-  </div>
-
-  <p class="reveal">With these final weights, our predictions are: Turkey #1: 4,760 (actual 5,000, off by 240), Turkey #2: 3,775 (actual 3,500, off by 275), Turkey #3: 4,522 (actual 4,500, off by 22). Not perfect — but with only 2 weights and 3 data points, we can't expect perfection.</p>
-
-  <p class="reveal">For the curious: the mathematically optimal weights are w₁ ≈ 2,347 and w₂ ≈ 1,604. We got close! A smaller learning rate and more steps would get us even closer.</p>
-
-  <h2 class="reveal">🎮 Interactive: Train Your Own Model</h2>
-
-  <div class="demo reveal" id="trainDemo">
-    <div class="demo-header">
-      <div class="demo-icon indigo">⚙️</div>
-      <div class="demo-title">Weight Training Simulator</div>
-    </div>
-    <p class="demo-desc">Adjust the weights manually or click Auto-Train to watch gradient descent in action.</p>
-
-    <div class="slider-row">
-      <span class="slider-label">w₁</span>
-      <input type="range" id="w1" min="0" max="5000" value="1000" step="10">
-      <span class="slider-val" id="w1v">1000</span>
-    </div>
-    <div class="slider-row">
-      <span class="slider-label">w₂</span>
-      <input type="range" id="w2" min="0" max="5000" value="3000" step="10">
-      <span class="slider-val" id="w2v">3000</span>
+    <div class="card mint reveal">
+      <div class="card-label">The Big Idea</div>
+      <p>We build a <strong>prediction machine</strong> that takes two simple numbers about a match and predicts chai cups sold. Then we <em>train</em> it — it makes a guess, measures its mistake, and fixes itself. After hundreds of fixes it becomes surprisingly accurate.</p>
     </div>
 
-    <div class="result-box" id="trainResult">
-      <div id="preds"></div>
-      <div style="margin-top:0.5rem; padding-top:0.5rem; border-top:1px solid var(--border-subtle);">
-        Total Loss: <span id="lossOut" style="color:var(--amber); font-weight:600;"></span>
+    <div class="analogy reveal">
+      <div class="analogy-icon">🎯</div>
+      <div><p><strong>Think of learning to bowl in cricket.</strong> Your first delivery goes wide. From that miss you adjust — move two steps left, change your wrist angle. Delivery after delivery you get closer to the stumps. AI learns the exact same way: guess → measure mistake → adjust → repeat.</p></div>
+    </div>
+
+    <!-- ══ SECTION 1 ══ -->
+    <div class="divider reveal"><div class="line"></div><div class="tag" id="model">Our Three Matches</div><div class="line"></div></div>
+
+    <h2 class="reveal">Meet the Three Matches 🏟️</h2>
+
+    <p class="reveal">We have records from <strong>3 past matches</strong> at the stadium. For each match we know two things we can measure <em>before</em> the match starts, and how much chai we actually sold <em>after</em>:</p>
+
+    <div class="match-cards reveal">
+      <div class="match-card mc1">
+        <div class="mc-lbl">Match 01</div>
+        <div class="mc-name">India vs Australia</div>
+        <div class="mc-stats">
+          <div class="mc-row"><span class="mc-key">Star rating</span><span class="chip chip-m">8 / 10</span></div>
+          <div class="mc-row"><span class="mc-key">Crowd hype</span><span class="chip chip-m">9 / 10</span></div>
+          <div class="mc-row"><span class="mc-key">Chai sold</span><span class="chip chip-a">5,000 cups</span></div>
+        </div>
+      </div>
+      <div class="match-card mc2">
+        <div class="mc-lbl">Match 02</div>
+        <div class="mc-name">India vs England</div>
+        <div class="mc-stats">
+          <div class="mc-row"><span class="mc-key">Star rating</span><span class="chip chip-i">6 / 10</span></div>
+          <div class="mc-row"><span class="mc-key">Crowd hype</span><span class="chip chip-i">7 / 10</span></div>
+          <div class="mc-row"><span class="mc-key">Chai sold</span><span class="chip chip-a">3,500 cups</span></div>
+        </div>
+      </div>
+      <div class="match-card mc3">
+        <div class="mc-lbl">Match 03</div>
+        <div class="mc-name">India vs South Africa</div>
+        <div class="mc-stats">
+          <div class="mc-row"><span class="mc-key">Star rating</span><span class="chip chip-a">7 / 10</span></div>
+          <div class="mc-row"><span class="mc-key">Crowd hype</span><span class="chip chip-a">6 / 10</span></div>
+          <div class="mc-row"><span class="mc-key">Chai sold</span><span class="chip chip-a">4,500 cups</span></div>
+        </div>
       </div>
     </div>
 
-    <div style="margin-top:1rem; display:flex; gap:0.5rem; flex-wrap:wrap;">
-      <button class="btn btn-mint" id="autoBtn">▶ Auto-Train 200 Steps</button>
-      <button class="btn btn-ghost" id="resetBtn">↺ Reset</button>
+    <div class="card amber reveal">
+      <div class="card-label">📊 What are these two input numbers?</div>
+      <p><strong>Star rating</strong> — how many famous players are playing (scale 1–10). Kohli playing? Bumrah? Rating goes up! &nbsp; <strong>Crowd hype</strong> — how excited the fans are on social media the day before (scale 1–10). More excitement → more fans → more chai.</p>
     </div>
-    <div id="trainLog" style="font-family:var(--font-mono); font-size:0.72rem; color:var(--text-4); margin-top:0.5rem; max-height:80px; overflow-y:auto;"></div>
 
-    <!-- Loss chart -->
-    <div class="chart-container" style="margin-top:1.25rem; height:180px;">
-      <canvas id="lossChart"></canvas>
+    <!-- Hype slider demo -->
+    <div class="demo reveal">
+      <div class="demo-header">
+        <div class="demo-icon amber">👆</div>
+        <div>
+          <div class="demo-title">Hype Explorer</div>
+          <div class="demo-desc">Drag to see how a bigger match means more chai sold</div>
+        </div>
+      </div>
+      <div class="slider-row">
+        <span class="slider-label" style="min-width:75px">Match hype</span>
+        <input type="range" id="hypeSlider" min="1" max="10" step="1" value="7">
+        <span class="slider-val" id="hypeVal">7 / 10</span>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:1.5rem;padding:1.1rem;background:var(--bg-elevated);border-radius:12px;border:1px solid var(--border-subtle);margin-top:0.75rem;flex-wrap:wrap">
+        <div style="text-align:center;min-width:140px">
+          <div id="chaiEmoji" style="font-size:1.9rem;line-height:1.4;transition:all 0.3s;word-break:break-all">☕☕☕☕☕☕☕</div>
+          <div style="font-family:var(--font-mono);font-size:0.78rem;color:var(--text-3);margin-top:0.4rem">Predicted: <span id="chaiCount" style="color:var(--mint);font-weight:600">3,500</span> cups</div>
+        </div>
+        <div style="flex:1;font-size:0.86rem;color:var(--text-3);min-width:160px;padding-top:0.25rem">
+          <p>Higher hype → more fans → <strong style="color:var(--mint)">more chai sold!</strong></p>
+          <p style="margin-top:0.4rem">This pattern is what the computer will learn from the data.</p>
+        </div>
+      </div>
     </div>
-  </div>
 
-  <div class="takeaway reveal">
-    <div class="takeaway-label">The Training Loop</div>
-    <p>This is the core idea behind training <strong>every</strong> modern AI model:<br>
-    ① Start with random weights → ② Compute predictions (forward pass) → ③ Calculate loss → ④ Compute gradients (how much each weight affects the loss) → ⑤ Update weights using gradient × learning rate → ⑥ Repeat millions of times.<br><br>
-    Our turkey model has 2 weights. ChatGPT has <strong>hundreds of billions</strong>. The process is identical — just way more weights, way more data, and way more steps.</p>
-  </div>
+    <!-- ══ SECTION 2 ══ -->
+    <div class="divider reveal"><div class="line"></div><div class="tag">The Formula</div><div class="line"></div></div>
+
+    <h2 class="reveal">Building the Prediction Formula</h2>
+
+    <p class="reveal">We want a formula that uses our two inputs to predict chai cups. The simplest formula that makes sense:</p>
+
+    <div class="formula-box reveal">
+      <div class="formula-main">
+        Prediction = star_rating × <span style="color:var(--mint)">w1</span> + crowd_hype × <span style="color:var(--indigo)">w2</span>
+      </div>
+      <div class="fparts">
+        <div class="fp" style="background:var(--mint-dim);border:1px solid rgba(52,211,153,0.2)">
+          <span style="color:var(--mint);font-size:1.2rem">w1</span><br>
+          <span style="color:var(--text-3);font-size:0.75rem">Weight for Stars</span>
+        </div>
+        <div class="fp" style="background:var(--indigo-dim);border:1px solid rgba(129,140,248,0.2)">
+          <span style="color:var(--indigo);font-size:1.2rem">w2</span><br>
+          <span style="color:var(--text-3);font-size:0.75rem">Weight for Hype</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="analogy reveal">
+      <div class="analogy-icon">🍛</div>
+      <div><p><strong>Think of it like a biryani recipe.</strong> Rice and masala are the ingredients (star rating, crowd hype). The <em>weights</em> are like the recipe ratios — "for every unit of this, use THAT much." Finding the right weights = finding the right recipe. And just like cooking, you taste, adjust, taste again.</p></div>
+    </div>
+
+    <div class="math-block reveal">
+      <div class="math-title">📖 The formula, broken down word by word</div>
+      <div class="math-step">
+        <div class="step-num">1</div>
+        <div class="step-content"><strong>star_rating × w1</strong> — Take the star rating (e.g. 8), multiply by Weight 1. This is the "stars contribution" to chai sales.</div>
+      </div>
+      <div class="math-step">
+        <div class="step-num">2</div>
+        <div class="step-content"><strong>crowd_hype × w2</strong> — Take crowd hype (e.g. 9), multiply by Weight 2. This is the "hype contribution."</div>
+      </div>
+      <div class="math-step">
+        <div class="step-num">3</div>
+        <div class="step-content"><strong>Add them</strong> → That is our <span class="result">Prediction</span>! Just multiply and add. That's it.</div>
+      </div>
+    </div>
+
+    <div class="quiz-box reveal" id="q1">
+      <div class="quiz-q">🧠 If w1 = 300 and w2 = 200, and a match has star_rating = 8 and crowd_hype = 9, what is the prediction?</div>
+      <div class="quiz-opts">
+        <button class="qo" onclick="checkQ('q1',this,false)">300 + 200 = 500 cups</button>
+        <button class="qo" onclick="checkQ('q1',this,true)">8 × 300 + 9 × 200 = 4,200 cups</button>
+        <button class="qo" onclick="checkQ('q1',this,false)">8 × 200 + 9 × 300 = 4,300 cups</button>
+      </div>
+      <div class="quiz-fb" id="q1-fb">✅ <strong>Sahi jawab!</strong> 8 × 300 = 2,400 (stars part) + 9 × 200 = 1,800 (hype part) = 4,200. The actual was 5,000 — so we're off by 800. Time to find better weights!</div>
+    </div>
+
+    <!-- ══ SECTION 3 ══ -->
+    <div class="divider reveal"><div class="line"></div><div class="tag">First Guess</div><div class="line"></div></div>
+
+    <h2 class="reveal">Step 1 — Pick Random Weights 🎲</h2>
+
+    <p class="reveal">We have zero idea what w1 and w2 should be. So we just pick random numbers — say <span class="chip chip-m">w1 = 300</span> and <span class="chip chip-i">w2 = 250</span>. Yes, they will be wrong. That's perfectly fine!</p>
+
+    <div class="card indigo reveal">
+      <div class="card-label">Why start random? Isn't that bad?</div>
+      <p>Think of a new chai shop owner on Day 1 — they don't know how much ginger is right. They make a batch, taste it, and adjust. We start random and fix from there. The clever part is <em>how</em> we fix it.</p>
+    </div>
+
+    <div class="reveal">
+      <h3>Walk-through: predicting Match 1</h3>
+      <p>star_rating = 8, crowd_hype = 9, w1 = 300, w2 = 250</p>
+      <div class="calc-walk">
+        <div class="cl hl">Prediction = star_rating × w1 + crowd_hype × w2</div>
+        <div class="cl"><span class="eq">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=</span> &nbsp;<span class="chip chip-a">8</span> × <span class="chip chip-m">300</span> + <span class="chip chip-a">9</span> × <span class="chip chip-i">250</span></div>
+        <div class="cl"><span class="eq">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=</span> &nbsp;<span class="chip chip-m">2,400</span> + <span class="chip chip-i">2,250</span></div>
+        <div class="cl hl"><span class="eq">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=</span> &nbsp;<strong style="color:var(--mint);font-size:1.05em">4,650 cups</strong> &nbsp;<span style="color:var(--text-4)">(actual was 5,000)</span></div>
+      </div>
+    </div>
+
+    <div class="reveal">
+      <table class="data-table">
+        <thead><tr><th>Match</th><th>Actual Chai</th><th>Predicted (w1=300, w2=250)</th><th>Off by</th></tr></thead>
+        <tbody>
+          <tr><td>🏏 India vs Aus</td><td>5,000</td><td style="color:var(--mint)">4,650</td><td style="color:var(--coral)">350 too low</td></tr>
+          <tr><td>🏏 India vs Eng</td><td>3,500</td><td style="color:var(--amber)">3,550</td><td style="color:var(--mint)">50 too high</td></tr>
+          <tr><td>🏏 India vs SA</td><td>4,500</td><td style="color:var(--coral)">3,600</td><td style="color:var(--coral)">900 too low</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="reveal">Match 2 is almost right! But Match 3 is off by 900 cups — that's a lot of wasted chai or unhappy fans. We need to measure exactly how wrong we are across all matches, in one number.</p>
+
+    <!-- ══ SECTION 4 ══ -->
+    <div class="divider reveal"><div class="line"></div><div class="tag" id="loss">Measuring Mistakes</div><div class="line"></div></div>
+
+    <h2 class="reveal">Step 2 — Measure the Error 📏</h2>
+
+    <p class="reveal"><strong>Error</strong> = Prediction − Actual. Predicted 4,650 but sold 5,000? Error = <span class="chip chip-r">−350</span> (we guessed 350 too low).</p>
+
+    <div class="analogy reveal">
+      <div class="analogy-icon">🏏</div>
+      <div><p><strong>Like a run-rate miss.</strong> Team needed 180 runs but scored 160 — error is −20 (fell short). Scored 200 — error is +20 (went over). Either way you need to know by how much you missed.</p></div>
+    </div>
+
+    <div class="card coral reveal">
+      <div class="card-label">⚠️ The Cancelling Problem</div>
+      <p>Match 1 error: −350 &nbsp;|&nbsp; Match 2 error: +50 &nbsp;|&nbsp; Match 3 error: −900</p>
+      <p>If we just add: −350 + 50 − 900 = −1,200. But +1,000 and −1,000 would cancel to zero — suggesting perfect predictions when we're actually terrible! Adding raw errors is misleading.</p>
+    </div>
+
+    <p class="reveal">The fix: <strong>square every error</strong> before adding. Squaring (multiply by itself) makes all numbers positive AND punishes big mistakes much harder than small ones.</p>
+
+    <div class="math-block reveal">
+      <div class="math-title">📐 What does "squaring" mean?</div>
+      <div class="math-step">
+        <div class="step-num">?</div>
+        <div class="step-content">
+          <strong>Squaring</strong> = multiply the number by itself.<br>
+          350² = 350 × 350 = <span class="result">122,500</span><br>
+          (−350)² = (−350) × (−350) = <span class="result">122,500</span> &nbsp;← negative disappears!
+        </div>
+      </div>
+      <div class="math-step">
+        <div class="step-num">💡</div>
+        <div class="step-content">Big mistakes get punished <em>much more</em>. An error of 100 → 10,000. But an error of 1,000 → 1,000,000. Ten times bigger error = hundred times bigger penalty. This pushes the model to avoid any huge single mistake.</div>
+      </div>
+    </div>
+
+    <div class="demo reveal">
+      <div class="demo-header">
+        <div class="demo-icon amber">✏️</div>
+        <div><div class="demo-title">Squaring Explorer</div><div class="demo-desc">Drag to see any error — positive or negative — become positive when squared</div></div>
+      </div>
+      <div class="slider-row">
+        <span class="slider-label" style="min-width:55px">Error</span>
+        <input type="range" id="errSlider" min="-2000" max="2000" step="50" value="350">
+        <span class="slider-val" id="errVal">+350</span>
+      </div>
+      <div class="result-box" id="sqResult">Error = +350 → Squared = 350 × 350 = <strong style="color:var(--mint)">122,500</strong></div>
+    </div>
+
+    <!-- ══ SECTION 5 ══ -->
+    <h2 class="reveal">Step 3 — The Loss Number 📉</h2>
+
+    <p class="reveal"><strong>Loss</strong> = sum of all squared errors. One number that says how good or bad the entire model is right now. Goal: drive it to zero (or as close as possible).</p>
+
+    <div class="formula-box reveal">
+      <div class="formula-main">Loss = (error₁)² + (error₂)² + (error₃)²</div>
+      <div style="margin-top:0.75rem;font-size:0.85rem;color:var(--text-3)">
+        ✅ Loss = 0 → perfect predictions for every match<br>
+        📈 Higher loss → our predictions are further from reality
+      </div>
+    </div>
+
+    <div class="reveal">
+      <h3>Loss calculation with our first random weights</h3>
+      <div class="calc-walk">
+        <div class="cl"><span style="color:var(--text-3)">Match 1:</span> Error = <span class="chip chip-r">−350</span>, Squared = <span class="chip chip-a">122,500</span></div>
+        <div class="cl"><span style="color:var(--text-3)">Match 2:</span> Error = <span class="chip chip-m">+50</span>, Squared = <span class="chip chip-a">2,500</span></div>
+        <div class="cl"><span style="color:var(--text-3)">Match 3:</span> Error = <span class="chip chip-r">−900</span>, Squared = <span class="chip chip-a">810,000</span></div>
+        <div class="cl hl"><strong>Loss</strong> = 122,500 + 2,500 + 810,000 = <strong style="color:var(--coral)">935,000</strong></div>
+      </div>
+    </div>
+
+    <div class="quiz-box reveal" id="q2">
+      <div class="quiz-q">🧠 After adjusting weights, Loss drops from 935,000 to 200,000. Is that good news?</div>
+      <div class="quiz-opts">
+        <button class="qo" onclick="checkQ('q2',this,true)">🎉 Yes! Lower loss = our predictions are getting closer to actual chai sales</button>
+        <button class="qo" onclick="checkQ('q2',this,false)">😬 No, we want the loss to stay high</button>
+        <button class="qo" onclick="checkQ('q2',this,false)">🤷 The loss number doesn't mean anything</button>
+      </div>
+      <div class="quiz-fb" id="q2-fb">✅ <strong>Bilkul sahi!</strong> Loss going down = predictions getting better. We always want loss as low as possible. Zero would mean perfect predictions every time!</div>
+    </div>
+
+    <!-- PLAYGROUND -->
+    <div class="divider reveal"><div class="line"></div><div class="tag">Play Zone</div><div class="line"></div></div>
+
+    <h2 class="reveal">🎮 Try It — Move the Weights Yourself!</h2>
+    <p class="reveal">Drag the sliders for w1 and w2. Watch predictions, errors, and loss update live. Try to get loss below <span class="chip chip-m">50,000</span>! The AI target is around <span class="chip chip-m">~8,000</span>.</p>
+
+    <div class="playground reveal">
+      <div class="wgrid">
+        <div class="wcard wa">
+          <h4>w1 — weight for Star Rating</h4>
+          <div class="wbig" id="w1d">300</div>
+          <input type="range" id="w1s" min="0" max="800" step="10" value="300" style="width:100%">
+        </div>
+        <div class="wcard wb">
+          <h4>w2 — weight for Crowd Hype</h4>
+          <div class="wbig" id="w2d">250</div>
+          <input type="range" id="w2s" min="0" max="800" step="10" value="250" style="width:100%">
+        </div>
+      </div>
+
+      <table class="ptable">
+        <thead><tr><th>Match</th><th>Actual</th><th>Predicted</th><th>Error</th><th>Error²</th></tr></thead>
+        <tbody id="pRows"></tbody>
+      </table>
+
+      <div class="lossmeter">
+        <div class="llbl">Total Loss</div>
+        <div class="lnum lbad" id="lDisp">935,000</div>
+        <div class="ltrack"><div class="lfill" id="lFill" style="width:55%"></div></div>
+        <div style="display:flex;justify-content:space-between;margin-top:4px">
+          <span style="font-family:var(--font-mono);font-size:0.7rem;color:var(--mint)">0 = Perfect</span>
+          <span style="font-family:var(--font-mono);font-size:0.7rem;color:var(--coral)">Higher = Worse</span>
+        </div>
+      </div>
+      <div style="margin-top:0.75rem;padding:0.65rem 0.9rem;background:var(--bg-elevated);border-radius:9px;font-family:var(--font-mono);font-size:0.78rem;color:var(--text-3)" id="bestBox">
+        🏆 Your best so far: <span id="bestSpan" style="color:var(--amber)">—</span> &nbsp;|&nbsp; AI target: <strong style="color:var(--mint)">~8,000</strong>
+      </div>
+    </div>
+
+    <!-- ══ SECTION 6 ══ -->
+    <div class="divider reveal"><div class="line"></div><div class="tag" id="grad">Smart Direction</div><div class="line"></div></div>
+
+    <h2 class="reveal">Step 4 — Which Way Do We Adjust? 🧭</h2>
+
+    <p class="reveal">Instead of blindly guessing new weights, math tells us <em>exactly</em> which direction to nudge each weight to reduce the loss. This uses a concept called a <strong>derivative</strong> — basically a slope detector.</p>
+
+    <div class="analogy reveal">
+      <div class="analogy-icon">🏔️</div>
+      <div><p><strong>Imagine you are blindfolded somewhere in the Sahyadri mountains.</strong> Your goal is the lowest valley. You cannot see — but you can feel the ground tilt under your feet. If it slopes down to your left, step left. Always step downhill. This is <strong>Gradient Descent</strong> — walking down the "loss hill" to the lowest point.</p></div>
+    </div>
+
+    <div class="card indigo reveal">
+      <div class="card-label">🔢 The Derivative — a Slope Detector</div>
+      <p>The derivative tells us: <em>"if I increase w1 a tiny bit, does the loss go up or down?"</em> If the answer is "up" (positive slope), we should <em>decrease</em> w1. If "down" (negative slope), we should <em>increase</em> w1. It's just a signal pointing us in the right direction.</p>
+    </div>
+
+    <div class="demo reveal">
+      <div class="demo-header">
+        <div class="demo-icon indigo">📐</div>
+        <div><div class="demo-title">Slope Explorer</div><div class="demo-desc">Drag x along the curve. See the tangent line — it shows which way is downhill.</div></div>
+      </div>
+      <div style="margin-bottom:0.75rem;font-size:0.86rem;color:var(--text-3)">The curve f(x) = x² is shaped like a bowl. At any point, the slope of the tangent line tells you which way to step to reach the bottom (x = 0, where loss is lowest).</div>
+      <div class="slider-row">
+        <span class="slider-label" style="min-width:25px">x =</span>
+        <input type="range" id="dSl" min="-6" max="6" step="0.1" value="4">
+        <span class="slider-val" id="dXv">4</span>
+      </div>
+      <div class="dcanvas-wrap"><canvas id="dCv" height="190" style="display:block;width:100%"></canvas></div>
+      <div class="result-box" id="dRes" style="margin-top:0.75rem">
+        At x = 4: f(x) = 16, slope = 8 → <strong style="color:var(--coral)">positive slope → decrease x to go downhill</strong>
+      </div>
+    </div>
+
+    <p class="reveal">In our chai model we have two weights. So we compute the slope for each one separately — these are called <strong>partial derivatives</strong>. One for w1, one for w2.</p>
+
+    <div class="math-block reveal">
+      <div class="math-title">🔬 Partial derivatives — what they actually mean</div>
+      <div class="math-step">
+        <div class="step-num">∂w1</div>
+        <div class="step-content">
+          <strong>∂Loss/∂w1</strong> = "if w1 increases by a tiny bit, how much does the loss change?" (while keeping w2 fixed)<br>
+          <span style="color:var(--text-3)">Computed from our 3 match data points → gives us a number</span>
+        </div>
+      </div>
+      <div class="math-step">
+        <div class="step-num">∂w2</div>
+        <div class="step-content">
+          <strong>∂Loss/∂w2</strong> = same idea but for w2 (while keeping w1 fixed)<br>
+          <span style="color:var(--text-3)">A separate number telling us which way to move w2</span>
+        </div>
+      </div>
+      <div class="math-step">
+        <div class="step-num">📌</div>
+        <div class="step-content">
+          At our starting weights w1=300, w2=250:<br>
+          ∂Loss/∂w1 ≈ <span class="hl">−16,100</span> → negative → <strong>increase</strong> w1 (it's too small!)<br>
+          ∂Loss/∂w2 ≈ <span class="hl">−14,650</span> → negative → <strong>increase</strong> w2 (it's too small too!)
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ SECTION 7 ══ -->
+    <div class="divider reveal"><div class="line"></div><div class="tag">One Step</div><div class="line"></div></div>
+
+    <h2 class="reveal">Step 5 — Update the Weights 🔧</h2>
+
+    <p class="reveal">We know the direction. Now we use a <strong>learning rate</strong> — a small number like 0.001 — to control how big our step is. Too big a step = overshoot the good answer. Too small = takes forever.</p>
+
+    <div class="analogy reveal">
+      <div class="analogy-icon">🍵</div>
+      <div><p><strong>Like adjusting ginger in chai.</strong> If the batch is bland you don't dump in the whole jar. You add a pinch, taste, add another pinch. The learning rate is that pinch — small and careful, so you don't ruin the whole pot.</p></div>
+    </div>
+
+    <div class="formula-box reveal">
+      <div class="formula-main">
+        new_w1 = old_w1 − (learning_rate × slope_of_w1)<br>
+        new_w2 = old_w2 − (learning_rate × slope_of_w2)
+      </div>
+    </div>
+
+    <div class="reveal">
+      <div class="calc-walk">
+        <div class="cl"><span style="color:var(--text-3)">Learning rate:</span> <span class="chip chip-a">0.001</span></div>
+        <div class="cl"><span style="color:var(--text-3)">Slope of w1 ≈</span> <span class="chip chip-r">−16,100</span> &nbsp;→ subtract a negative = <strong>increase</strong> w1</div>
+        <div class="cl"><span style="color:var(--text-3)">Slope of w2 ≈</span> <span class="chip chip-r">−14,650</span> &nbsp;→ subtract a negative = <strong>increase</strong> w2</div>
+        <div class="cl" style="margin-top:0.3rem"></div>
+        <div class="cl hl">new w1 = 300 − (0.001 × −16,100) = 300 + 16.1 = <strong style="color:var(--mint)">316</strong></div>
+        <div class="cl hl">new w2 = 250 − (0.001 × −14,650) = 250 + 14.65 = <strong style="color:var(--mint)">265</strong></div>
+      </div>
+    </div>
+
+    <p class="reveal">Loss drops from <span class="chip chip-r">935,000</span> to around <span class="chip chip-m">~700,000</span>. Better! Now repeat this hundreds of times.</p>
+
+    <!-- STEP TRAINER -->
+    <div class="demo reveal">
+      <div class="demo-header">
+        <div class="demo-icon mint">⚡</div>
+        <div><div class="demo-title">Live Step Trainer</div><div class="demo-desc">Click to take steps. Watch the weights improve and loss fall in real time.</div></div>
+      </div>
+
+      <div class="gdctrls">
+        <button class="btn btn-mint" onclick="step1()">Take 1 Step →</button>
+        <button class="btn btn-ghost" onclick="step10()">10 Steps →→</button>
+        <button class="btn btn-ghost" onclick="stepReset()">↺ Reset</button>
+        <div class="stepctr">Step: <span id="stepCtr">0</span></div>
+      </div>
+
+      <div class="tgrid">
+        <div class="tcard">
+          <div class="tlbl">w1 (Star Weight)</div>
+          <div class="tval" id="sw1" style="color:var(--mint)">300</div>
+          <div class="prob-track" style="margin-top:0.5rem">
+            <div class="prob-fill" id="w1b" style="width:30%;background:var(--mint)"></div>
+          </div>
+        </div>
+        <div class="tcard">
+          <div class="tlbl">w2 (Hype Weight)</div>
+          <div class="tval" id="sw2" style="color:var(--indigo)">250</div>
+          <div class="prob-track" style="margin-top:0.5rem">
+            <div class="prob-fill" id="w2b" style="width:25%;background:var(--indigo)"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="lossmeter">
+        <div class="llbl">Current Loss</div>
+        <div class="lnum lbad" id="slDisp">935,000</div>
+        <div class="ltrack"><div class="lfill" id="slFill" style="width:55%"></div></div>
+      </div>
+
+      <canvas id="lcChart" height="160" style="width:100%;margin-top:1rem;border-radius:8px;background:rgba(0,0,0,0.2)"></canvas>
+      <div style="font-family:var(--font-mono);font-size:0.7rem;color:var(--text-3);margin-top:4px;text-align:center">Loss falling over training steps</div>
+    </div>
+
+    <!-- ══ SECTION 8 ══ -->
+    <div class="divider reveal"><div class="line"></div><div class="tag" id="train">Full Training</div><div class="line"></div></div>
+
+    <h2 class="reveal">Step 6 — Train for 1000 Steps! 🚀</h2>
+
+    <p class="reveal">One step is a tiny improvement. But if we do this 1000 times — each time computing the slope and nudging the weights — the model becomes very accurate.</p>
+
+    <div class="demo reveal">
+      <div class="demo-header">
+        <div class="demo-icon mint">🏁</div>
+        <div><div class="demo-title">Full Training Run</div><div class="demo-desc">Click to fast-forward through all 1000 training steps</div></div>
+      </div>
+      <button class="btn btn-mint" onclick="fullTrain()" style="margin-bottom:1rem">🚀 Train for 1000 Steps!</button>
+      <div id="trainResult" style="display:none">
+        <div class="calc-walk">
+          <div class="cl hl"><strong>After 1000 steps:</strong></div>
+          <div class="cl">w1 = <span id="fw1" class="chip chip-m">—</span></div>
+          <div class="cl">w2 = <span id="fw2" class="chip chip-i">—</span></div>
+          <div class="cl">Loss = <span id="fLoss" class="chip chip-m">—</span> &nbsp;<strong style="color:var(--mint)">(started at 935,000 — massive improvement!)</strong></div>
+        </div>
+        <table class="data-table" style="margin-top:1rem">
+          <thead><tr><th>Match</th><th>Actual Chai</th><th>Predicted (trained)</th><th>Error</th></tr></thead>
+          <tbody id="finalRows"></tbody>
+        </table>
+        <div class="takeaway" style="margin-top:1rem">
+          <div class="takeaway-label">🍵 Chai stall is ready for match day!</div>
+          <p>Predictions are within <strong>50–100 cups</strong> of reality. The chai stall owner can confidently prepare the right amount before each match — no wastage, no running out!</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ SECTION 9 ══ -->
+    <div class="divider reveal"><div class="line"></div><div class="tag">The Big Picture</div><div class="line"></div></div>
+
+    <h2 class="reveal">What You Just Learned 🎓</h2>
+
+    <div class="card-grid reveal">
+      <div class="grid-card"><div class="gc-icon">⚖️</div><h4>Weights</h4><p>Numbers the model learns. They control how much each input contributes to the prediction.</p></div>
+      <div class="grid-card"><div class="gc-icon">📉</div><h4>Loss</h4><p>Total squared error in one number. Always drive it down toward zero.</p></div>
+      <div class="grid-card"><div class="gc-icon">🏔️</div><h4>Gradient Descent</h4><p>Use the slope of loss to always step in the downhill direction.</p></div>
+      <div class="grid-card"><div class="gc-icon">🍵</div><h4>Learning Rate</h4><p>Step size. Too big = overshoot. Too small = too slow. Like a pinch of ginger.</p></div>
+      <div class="grid-card"><div class="gc-icon">🔁</div><h4>Training Loop</h4><p>Predict → measure loss → compute slope → update weights → repeat 1000s of times.</p></div>
+      <div class="grid-card"><div class="gc-icon">🧠</div><h4>This IS AI!</h4><p>ChatGPT, Gemini — every AI does this exact loop with billions of weights, not just two.</p></div>
+    </div>
+
+    <div class="takeaway reveal">
+      <div class="takeaway-label">🎉 The Core Loop of AI Learning</div>
+      <p><strong>1. Predict</strong> → 2. Measure loss → <strong>3. Compute slope</strong> → 4. Nudge weights downhill → <strong>5. Repeat</strong> → Accurate predictions — for chai, or for anything!</p>
+    </div>
+
+    <div class="quiz-box reveal" id="q3">
+      <div class="quiz-q">🧠 Final question! Gradient Descent is most like…</div>
+      <div class="quiz-opts">
+        <button class="qo" onclick="checkQ('q3',this,false)">Climbing to the top of a mountain by always going uphill</button>
+        <button class="qo" onclick="checkQ('q3',this,true)">Always stepping in the downhill direction to reach the lowest valley (minimum loss)</button>
+        <button class="qo" onclick="checkQ('q3',this,false)">Randomly jumping around a hill hoping to accidentally land in the valley</button>
+      </div>
+      <div class="quiz-fb" id="q3-fb">🎊 <strong>Perfect!</strong> Gradient descent always steps downhill on the loss surface, one careful step at a time. That one simple idea — repeated thousands of times — is the entire secret of how modern AI learns. Jai Ho! 🇮🇳</div>
+    </div>
+
+  </article>
 
   <nav class="chapter-footer-nav reveal">
-    <a href="chapter-2.html" class="prev">
-      <span class="dir">← Previous</span>
-      <span class="title">Predicting the Next Word</span>
-    </a>
-    <a href="chapter-4.html" class="next">
-      <span class="dir">Next Chapter →</span>
-      <span class="title">Backpropagation</span>
-    </a>
+    <a href="chapter-2.html" class="prev"><span class="dir">← Previous</span><span class="title">Predicting Words</span></a>
+    <a href="chapter-4.html" class="next"><span class="dir">Next →</span><span class="title">More Complex Models</span></a>
   </nav>
-</article>
+
+</main>
 
 <script src="script.js"></script>
 <script>
-const turkeys = [
-  { h:1.00, l:1.50, actual:5000 },
-  { h:0.75, l:1.25, actual:3500 },
-  { h:1.25, l:1.00, actual:4500 }
-];
-const w1El = document.getElementById('w1'), w2El = document.getElementById('w2');
-const w1v = document.getElementById('w1v'), w2v = document.getElementById('w2v');
-const predsEl = document.getElementById('preds'), lossEl = document.getElementById('lossOut');
-const logEl = document.getElementById('trainLog');
-let lossHistory = [];
+const M=[{name:'India vs Aus',s:8,h:9,actual:5000},{name:'India vs Eng',s:6,h:7,actual:3500},{name:'India vs SA',s:7,h:6,actual:4500}];
 
-function update() {
-  const w1 = +w1El.value, w2 = +w2El.value;
-  w1v.textContent = w1; w2v.textContent = w2;
-  let totalLoss = 0;
-  let html = '';
-  turkeys.forEach((t,i) => {
-    const pred = t.h*w1 + t.l*w2;
-    const err = pred - t.actual;
-    totalLoss += err*err;
-    const errColor = Math.abs(err) < 300 ? 'var(--mint)' : 'var(--coral)';
-    html += `Turkey #${i+1}: <span style="color:var(--mint)">${Math.round(pred)}</span> (error: <span style="color:${errColor}">${Math.round(err) > 0 ? '+' : ''}${Math.round(err)}</span>)  `;
-  });
-  predsEl.innerHTML = html;
-  lossEl.textContent = Math.round(totalLoss).toLocaleString();
+// Hype slider
+document.getElementById('hypeSlider').addEventListener('input',function(){
+  var v=+this.value;
+  document.getElementById('hypeVal').textContent=v+' / 10';
+  document.getElementById('chaiCount').textContent=(v*500).toLocaleString();
+  document.getElementById('chaiEmoji').textContent='☕'.repeat(Math.max(1,v));
+});
+
+// Quiz
+function checkQ(id,btn,ok){
+  document.querySelectorAll('#'+id+' .qo').forEach(function(b){b.disabled=true;});
+  btn.classList.add(ok?'correct':'wrong');
+  var fb=document.getElementById(id+'-fb');
+  fb.classList.add('show');
+  if(ok) confetti();
 }
-w1El.oninput = update; w2El.oninput = update; update();
 
-// Auto train
-document.getElementById('autoBtn').onclick = function() {
-  let w1 = +w1El.value, w2 = +w2El.value;
-  const lr = 0.01;
-  logEl.innerHTML = '';
-  lossHistory = [];
-  let step = 0;
-  const interval = setInterval(() => {
-    let dw1 = 0, dw2 = 0, loss = 0;
-    turkeys.forEach(t => {
-      const err = t.h*w1 + t.l*w2 - t.actual;
-      dw1 += 2*err*t.h; dw2 += 2*err*t.l;
-      loss += err*err;
-    });
-    w1 -= lr*dw1; w2 -= lr*dw2; step++;
-    lossHistory.push(loss);
-    if (step % 20 === 0 || step <= 5 || step === 200) {
-      logEl.innerHTML += `Step ${step}: w₁=${Math.round(w1)} w₂=${Math.round(w2)} loss=${Math.round(loss).toLocaleString()}\n`;
-      logEl.scrollTop = logEl.scrollHeight;
-    }
-    w1El.value = Math.round(w1); w2El.value = Math.round(w2); update();
-    if (step >= 200) { clearInterval(interval); drawChart(); }
-  }, 20);
-};
-document.getElementById('resetBtn').onclick = function() {
-  w1El.value = 1000; w2El.value = 3000; update();
-  logEl.innerHTML = ''; lossHistory = [];
-  const ctx = document.getElementById('lossChart').getContext('2d');
-  ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);
-};
+// Squaring slider
+document.getElementById('errSlider').addEventListener('input',function(){
+  var e=+this.value;
+  document.getElementById('errVal').textContent=(e>=0?'+':'')+e;
+  var sq=e*e;
+  document.getElementById('sqResult').innerHTML='Error = '+(e>=0?'+':'')+e.toLocaleString()+' → Squared = '+Math.abs(e).toLocaleString()+' × '+Math.abs(e).toLocaleString()+' = <strong style="color:var(--mint)">'+sq.toLocaleString()+'</strong><br><span style="color:var(--text-3);font-size:0.8rem">'+(e<0?'✅ Negative becomes POSITIVE when squared!':'✅ Positive stays positive.')+'</span>';
+});
 
-// Simple loss chart
-function drawChart() {
-  const canvas = document.getElementById('lossChart');
-  const ctx = canvas.getContext('2d');
-  const dpr = window.devicePixelRatio || 1;
-  const rect = canvas.parentElement.getBoundingClientRect();
-  canvas.width = rect.width * dpr;
-  canvas.height = rect.height * dpr;
-  canvas.style.width = rect.width + 'px';
-  canvas.style.height = rect.height + 'px';
-  ctx.scale(dpr, dpr);
-  const W = rect.width, H = rect.height;
-  const pad = {t:20,r:15,b:30,l:60};
-  const gW = W-pad.l-pad.r, gH = H-pad.t-pad.b;
+// Loss calc
+function calcLoss(w1,w2){return M.reduce(function(s,m){var e=m.s*w1+m.h*w2-m.actual;return s+e*e;},0);}
 
-  ctx.clearRect(0,0,W,H);
-  if (lossHistory.length < 2) return;
+// Playground
+var bestL=Infinity;
+function renderPG(){
+  var w1=+document.getElementById('w1s').value, w2=+document.getElementById('w2s').value;
+  document.getElementById('w1d').textContent=w1.toLocaleString();
+  document.getElementById('w2d').textContent=w2.toLocaleString();
+  var html=M.map(function(m){
+    var p=Math.round(m.s*w1+m.h*w2), e=p-m.actual, sq=e*e;
+    return '<tr><td>🏏 '+m.name+'</td><td>'+m.actual.toLocaleString()+'</td><td style="color:var(--mint)">'+p.toLocaleString()+'</td><td class="'+(e>0?'ehi':'elo')+'">'+(e>=0?'+':'')+e.toLocaleString()+'</td><td>'+sq.toLocaleString()+'</td></tr>';
+  }).join('');
+  document.getElementById('pRows').innerHTML=html;
+  var loss=calcLoss(w1,w2);
+  document.getElementById('lDisp').textContent=Math.round(loss).toLocaleString();
+  document.getElementById('lDisp').className='lnum '+(loss<100000?'lgood':'lbad');
+  document.getElementById('lFill').style.width=Math.min(100,(loss/2000000)*100)+'%';
+  if(loss<bestL){bestL=loss;document.getElementById('bestSpan').textContent=Math.round(loss).toLocaleString();if(loss<30000)confetti();}
+}
+document.getElementById('w1s').addEventListener('input',renderPG);
+document.getElementById('w2s').addEventListener('input',renderPG);
+renderPG();
 
-  const maxL = Math.max(...lossHistory);
-  const minL = Math.min(...lossHistory);
-
-  // Grid
-  ctx.strokeStyle = 'rgba(255,255,255,0.05)';
-  ctx.lineWidth = 1;
-  for (let i = 0; i <= 4; i++) {
-    const y = pad.t + (gH/4)*i;
-    ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(W-pad.r,y); ctx.stroke();
-    const val = maxL - (maxL-minL)*(i/4);
-    ctx.fillStyle = 'rgba(255,255,255,0.25)';
-    ctx.font = '10px JetBrains Mono';
-    ctx.textAlign = 'right';
-    ctx.fillText(Math.round(val/1000)+'K', pad.l-8, y+3);
-  }
-
-  // Line
-  ctx.beginPath();
-  ctx.strokeStyle = '#34d399';
-  ctx.lineWidth = 2;
-  lossHistory.forEach((l,i) => {
-    const x = pad.l + (i/(lossHistory.length-1))*gW;
-    const y = pad.t + (1 - (l-minL)/(maxL-minL))*gH;
-    i === 0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
-  });
+// Derivative canvas
+var dCv=document.getElementById('dCv'), dCtx=dCv.getContext('2d');
+function drawDeriv(xv){
+  var W=dCv.parentElement.clientWidth||600; dCv.width=W; dCv.height=190;
+  var ctx=dCtx; ctx.clearRect(0,0,W,190);
+  var cx=W/2, cy=172, sc=W/16;
+  ctx.strokeStyle='rgba(255,255,255,0.07)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(0,cy); ctx.lineTo(W,cy); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx,0); ctx.lineTo(cx,190); ctx.stroke();
+  ctx.strokeStyle='#fb7185'; ctx.lineWidth=2; ctx.beginPath();
+  for(var px=0;px<W;px++){var x=(px-cx)/sc,y=cy-x*x*sc*0.45; px===0?ctx.moveTo(px,y):ctx.lineTo(px,y);}
   ctx.stroke();
-
-  // Labels
-  ctx.fillStyle = 'rgba(255,255,255,0.3)';
-  ctx.font = '10px JetBrains Mono';
-  ctx.textAlign = 'center';
-  ctx.fillText('Training Steps →', W/2, H-5);
-  ctx.fillText('Loss ↑', pad.l, pad.t-8);
+  var slope=2*xv, px0=cx+xv*sc, py0=cy-xv*xv*sc*0.45, rise=slope*0.45;
+  ctx.strokeStyle='#818cf8'; ctx.lineWidth=1.5; ctx.setLineDash([5,4]);
+  ctx.beginPath(); ctx.moveTo(px0-70,py0+rise*70); ctx.lineTo(px0+70,py0-rise*70); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle='#34d399'; ctx.beginPath(); ctx.arc(px0,py0,6,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='rgba(176,184,200,0.6)'; ctx.font='12px JetBrains Mono,monospace';
+  ctx.fillText('f(x) = x²',12,20); ctx.fillStyle='#818cf8'; ctx.fillText('tangent line',12,38);
 }
+document.getElementById('dSl').addEventListener('input',function(){
+  var x=+this.value; document.getElementById('dXv').textContent=x.toFixed(1);
+  var dir=x>0.05?'positive → <strong style="color:var(--coral)">decrease x to go downhill</strong>':x<-0.05?'negative → <strong style="color:var(--mint)">increase x to go downhill</strong>':'<strong style="color:var(--mint)">slope = 0 → you are at the bottom! 🎊</strong>';
+  document.getElementById('dRes').innerHTML='At x = '+x.toFixed(1)+': f(x) = '+(x*x).toFixed(1)+', slope = '+(2*x).toFixed(1)+' → '+dir;
+  drawDeriv(x);
+});
+setTimeout(function(){drawDeriv(4);},120);
+
+// Gradient descent trainer
+var sw1=300, sw2=250, steps=0, LR=0.001, lHist=[calcLoss(300,250)];
+function grad(w1,w2){
+  var g1=0,g2=0;
+  M.forEach(function(m){var e=m.s*w1+m.h*w2-m.actual; g1+=2*e*m.s; g2+=2*e*m.h;});
+  return[g1,g2];
+}
+function updateUI(){
+  document.getElementById('stepCtr').textContent=steps;
+  document.getElementById('sw1').textContent=Math.round(sw1).toLocaleString();
+  document.getElementById('sw2').textContent=Math.round(sw2).toLocaleString();
+  var loss=calcLoss(sw1,sw2);
+  document.getElementById('slDisp').textContent=Math.round(loss).toLocaleString();
+  document.getElementById('slDisp').className='lnum '+(loss<100000?'lgood':'lbad');
+  document.getElementById('slFill').style.width=Math.min(100,(loss/1200000)*100)+'%';
+  document.getElementById('w1b').style.width=Math.min(100,(sw1/600)*100)+'%';
+  document.getElementById('w2b').style.width=Math.min(100,(sw2/500)*100)+'%';
+  drawLChart();
+}
+function doStep(){var g=grad(sw1,sw2);sw1-=LR*g[0];sw2-=LR*g[1];steps++;lHist.push(calcLoss(sw1,sw2));}
+function step1(){doStep();updateUI();}
+function step10(){for(var i=0;i<10;i++)doStep();updateUI();}
+function stepReset(){sw1=300;sw2=250;steps=0;lHist=[calcLoss(300,250)];updateUI();}
+function fullTrain(){
+  sw1=300;sw2=250;steps=0;lHist=[calcLoss(300,250)];
+  for(var i=0;i<1000;i++){var g=grad(sw1,sw2);sw1-=LR*g[0];sw2-=LR*g[1];steps++;if(i<25||i%40===0)lHist.push(calcLoss(sw1,sw2));}
+  updateUI();
+  var loss=calcLoss(sw1,sw2);
+  document.getElementById('fw1').textContent=Math.round(sw1).toLocaleString();
+  document.getElementById('fw2').textContent=Math.round(sw2).toLocaleString();
+  document.getElementById('fLoss').textContent=Math.round(loss).toLocaleString();
+  var rows=M.map(function(m){
+    var p=Math.round(m.s*sw1+m.h*sw2),e=p-m.actual;
+    return '<tr><td>🏏 '+m.name+'</td><td>'+m.actual.toLocaleString()+'</td><td style="color:var(--mint)">'+p.toLocaleString()+'</td><td class="'+(Math.abs(e)<100?'elo':'ehi')+'">'+(e>=0?'+':'')+e.toLocaleString()+'</td></tr>';
+  }).join('');
+  document.getElementById('finalRows').innerHTML=rows;
+  document.getElementById('trainResult').style.display='block';
+  confetti();
+}
+var lcCv=document.getElementById('lcChart');
+function drawLChart(){
+  var W=lcCv.parentElement.clientWidth||600; lcCv.width=W; lcCv.height=160;
+  var ctx=lcCv.getContext('2d'); ctx.clearRect(0,0,W,160);
+  if(lHist.length<2)return;
+  var maxL=Math.max.apply(null,lHist),minL=Math.min.apply(null,lHist),range=maxL-minL||1;
+  var pts=lHist.map(function(l,i){return{x:(i/(lHist.length-1))*(W-30)+15,y:140-((l-minL)/range)*120};});
+  var g=ctx.createLinearGradient(0,0,0,160); g.addColorStop(0,'rgba(251,113,133,0.2)'); g.addColorStop(1,'rgba(251,113,133,0)');
+  ctx.fillStyle=g; ctx.beginPath(); ctx.moveTo(pts[0].x,160);
+  pts.forEach(function(p){ctx.lineTo(p.x,p.y);}); ctx.lineTo(pts[pts.length-1].x,160); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle='#fb7185'; ctx.lineWidth=2; ctx.beginPath();
+  pts.forEach(function(p,i){i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y);}); ctx.stroke();
+  var last=pts[pts.length-1]; ctx.fillStyle='#34d399'; ctx.beginPath(); ctx.arc(last.x,last.y,5,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='rgba(107,122,144,0.7)'; ctx.font='11px JetBrains Mono,monospace';
+  ctx.fillText(Math.round(maxL).toLocaleString(),16,16); ctx.fillText(Math.round(minL).toLocaleString(),16,154);
+}
+updateUI();
+
+// Confetti
+function confetti(){
+  var layer=document.getElementById('cfLayer'),cols=['#34d399','#818cf8','#fbbf24','#fb7185','#22d3ee','#f97316'];
+  for(var i=0;i<55;i++){
+    var p=document.createElement('div'); p.className='cp';
+    p.style.cssText='left:'+Math.random()*100+'vw;top:-8px;background:'+cols[Math.floor(Math.random()*6)]+';width:'+(6+Math.random()*8)+'px;height:'+(6+Math.random()*8)+'px;animation-duration:'+(1.5+Math.random()*2)+'s;animation-delay:'+Math.random()*0.4+'s';
+    layer.appendChild(p); setTimeout(function(pp){return function(){pp.remove()};}(p),3500);
+  }
+}
+
+window.addEventListener('resize',function(){drawDeriv(+document.getElementById('dSl').value);drawLChart();});
 </script>
 </body>
 </html>
