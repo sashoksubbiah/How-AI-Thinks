@@ -446,32 +446,137 @@
       </div>
     </div>
 
-    <p class="reveal">In our chai model we have two weights. So we compute the slope for each one separately — these are called <strong>partial derivatives</strong>. One for w1, one for w2.</p>
+    <p class="reveal">In our chai model we have two weights. So we compute the slope for each one separately — these are called <strong>partial derivatives</strong>. One question for w1, one separate question for w2.</p>
 
-    <div class="math-block reveal">
-      <div class="math-title">🔬 Partial derivatives — what they actually mean</div>
-      <div class="math-step">
-        <div class="step-num">∂w1</div>
-        <div class="step-content">
-          <strong>∂Loss/∂w1</strong> = "if w1 increases by a tiny bit, how much does the loss change?" (while keeping w2 fixed)<br>
-          <span style="color:var(--text-3)">Computed from our 3 match data points → gives us a number</span>
+    <!-- ════ PARTIAL DERIVATIVES — FULL INTERACTIVE SECTION ════ -->
+
+    <div class="card mint reveal">
+      <div class="card-label">📖 Step 1 of 5 — What are we asking?</div>
+      <p>We have two knobs — <strong>w1</strong> and <strong>w2</strong>. We cannot ask "how do both affect Loss at the same time?" — that's too confusing. So we ask two simpler questions, one at a time:</p>
+      <div style="margin-top:0.75rem;display:flex;flex-direction:column;gap:0.5rem">
+        <div style="padding:0.6rem 0.9rem;background:var(--mint-dim);border-radius:9px;font-family:var(--font-mono);font-size:0.85rem;color:var(--text-1)">
+          Question 1: If I nudge <strong style="color:var(--mint)">w1</strong> a tiny bit… does Loss go UP or DOWN? (keep w2 frozen)
+        </div>
+        <div style="padding:0.6rem 0.9rem;background:var(--indigo-dim);border-radius:9px;font-family:var(--font-mono);font-size:0.85rem;color:var(--text-1)">
+          Question 2: If I nudge <strong style="color:var(--indigo)">w2</strong> a tiny bit… does Loss go UP or DOWN? (keep w1 frozen)
         </div>
       </div>
-      <div class="math-step">
-        <div class="step-num">∂w2</div>
-        <div class="step-content">
-          <strong>∂Loss/∂w2</strong> = same idea but for w2 (while keeping w1 fixed)<br>
-          <span style="color:var(--text-3)">A separate number telling us which way to move w2</span>
+      <p style="margin-top:0.75rem">Those two questions are exactly what <strong>partial derivatives</strong> answer. That's the whole idea.</p>
+    </div>
+
+    <div class="card amber reveal">
+      <div class="card-label">🧊 Step 2 of 5 — What does "partial" mean?</div>
+      <p>The word <strong>"partial"</strong> just means: <em>change only ONE thing, keep everything else frozen.</em></p>
+      <div class="analogy" style="margin-top:0.75rem;margin-bottom:0">
+        <div class="analogy-icon">🌀</div>
+        <div><p>Imagine two ceiling fans in your room. You want to know how much cooler it gets if you speed up Fan 1. So you <strong>freeze Fan 2</strong> completely — don't touch it. Only dial up Fan 1. Now you can see exactly how much Fan 1 contributes to the cooling. That is a <em>partial</em> change. You held one thing fixed and moved only the other.</p></div>
+      </div>
+    </div>
+
+    <div class="card indigo reveal">
+      <div class="card-label">🧪 Step 3 of 5 — Try it: only move w1, w2 is frozen</div>
+      <p>Below, <strong style="color:var(--indigo)">w2 is locked at 250</strong>. Only drag w1 and watch what happens to Loss. Notice: as w1 increases from 300, Loss falls. That means the slope is <em>negative</em> — telling us w1 needs to go up.</p>
+      <div style="margin-top:1rem">
+        <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.5rem">
+          <span style="font-family:var(--font-mono);font-size:0.78rem;color:var(--text-3);min-width:80px">w1 (stars)</span>
+          <input type="range" id="pd_w1" min="100" max="600" step="1" value="300" style="flex:1">
+          <span style="font-family:var(--font-mono);font-size:0.88rem;color:var(--mint);min-width:38px;text-align:right" id="pd_w1val">300</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:1rem">
+          <span style="font-family:var(--font-mono);font-size:0.78rem;color:var(--text-3);min-width:80px">w2 (hype)</span>
+          <div style="flex:1;height:5px;background:var(--border-medium);border-radius:3px;position:relative">
+            <div style="position:absolute;top:-8px;left:calc(250/500*100%);transform:translateX(-50%);font-family:var(--font-mono);font-size:0.72rem;color:var(--indigo)">▲ frozen at 250</div>
+          </div>
+          <span style="font-family:var(--font-mono);font-size:0.88rem;color:var(--indigo);min-width:38px;text-align:right">250</span>
+        </div>
+        <div style="padding:0.9rem 1rem;border-radius:10px;font-family:var(--font-mono);font-size:0.88rem;transition:background 0.3s" id="pd_w1result">
+          Loss = 935,000
+        </div>
+        <div style="margin-top:0.5rem;padding:0.6rem 0.9rem;border-radius:8px;font-size:0.85rem;font-weight:600;transition:all 0.3s" id="pd_w1verdict">
+          Slope is negative → increase w1 to reduce Loss
         </div>
       </div>
-      <div class="math-step">
-        <div class="step-num">📌</div>
-        <div class="step-content">
-          At our starting weights w1=300, w2=250:<br>
-          ∂Loss/∂w1 ≈ <span class="hl">−16,100</span> → negative → <strong>increase</strong> w1 (it's too small!)<br>
-          ∂Loss/∂w2 ≈ <span class="hl">−14,650</span> → negative → <strong>increase</strong> w2 (it's too small too!)
+    </div>
+
+    <div class="card mint reveal">
+      <div class="card-label">🧪 Step 4 of 5 — Now only move w2, w1 is frozen</div>
+      <p>Same idea, other weight. <strong style="color:var(--mint)">w1 is locked at 300</strong>. Only drag w2 and watch Loss. You'll see the exact same pattern — Loss falls as w2 rises from 250, confirming the slope is negative for w2 too.</p>
+      <div style="margin-top:1rem">
+        <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.5rem">
+          <span style="font-family:var(--font-mono);font-size:0.78rem;color:var(--text-3);min-width:80px">w1 (stars)</span>
+          <div style="flex:1;height:5px;background:var(--border-medium);border-radius:3px;position:relative">
+            <div style="position:absolute;top:-8px;left:calc(300/500*100%);transform:translateX(-50%);font-family:var(--font-mono);font-size:0.72rem;color:var(--mint)">▲ frozen at 300</div>
+          </div>
+          <span style="font-family:var(--font-mono);font-size:0.88rem;color:var(--mint);min-width:38px;text-align:right">300</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:1rem">
+          <span style="font-family:var(--font-mono);font-size:0.78rem;color:var(--text-3);min-width:80px">w2 (hype)</span>
+          <input type="range" id="pd_w2" min="100" max="600" step="1" value="250" style="flex:1">
+          <span style="font-family:var(--font-mono);font-size:0.88rem;color:var(--indigo);min-width:38px;text-align:right" id="pd_w2val">250</span>
+        </div>
+        <div style="padding:0.9rem 1rem;border-radius:10px;font-family:var(--font-mono);font-size:0.88rem;transition:background 0.3s" id="pd_w2result">
+          Loss = 935,000
+        </div>
+        <div style="margin-top:0.5rem;padding:0.6rem 0.9rem;border-radius:8px;font-size:0.85rem;font-weight:600;transition:all 0.3s" id="pd_w2verdict">
+          Slope is negative → increase w2 to reduce Loss
         </div>
       </div>
+    </div>
+
+    <div class="card coral reveal">
+      <div class="card-label">🎯 Step 5 of 5 — What does the number actually mean?</div>
+      <p>At our starting weights w1=300, w2=250 the partial derivatives work out to:</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin:0.9rem 0">
+        <div style="background:var(--bg-surface);border-radius:10px;padding:0.9rem;text-align:center">
+          <div style="font-family:var(--font-mono);font-size:0.7rem;color:var(--text-3);margin-bottom:0.3rem;text-transform:uppercase;letter-spacing:1px">∂Loss / ∂w1</div>
+          <div style="font-family:var(--font-display);font-size:1.8rem;color:var(--mint)">−16,100</div>
+          <div style="font-size:0.8rem;color:var(--text-3);margin-top:0.3rem">negative → increase w1</div>
+        </div>
+        <div style="background:var(--bg-surface);border-radius:10px;padding:0.9rem;text-align:center">
+          <div style="font-family:var(--font-mono);font-size:0.7rem;color:var(--text-3);margin-bottom:0.3rem;text-transform:uppercase;letter-spacing:1px">∂Loss / ∂w2</div>
+          <div style="font-family:var(--font-display);font-size:1.8rem;color:var(--indigo)">−14,650</div>
+          <div style="font-size:0.8rem;color:var(--text-3);margin-top:0.3rem">negative → increase w2</div>
+        </div>
+      </div>
+      <div class="analogy" style="margin-bottom:0">
+        <div class="analogy-icon">🪧</div>
+        <div>
+          <p>Think of the number as a <strong>signpost on a hill</strong>:</p>
+          <p style="margin-top:0.4rem"><strong style="color:var(--mint)">Negative (−)</strong> → "go this way, the hill gets lower" → <em>increase</em> the weight</p>
+          <p><strong style="color:var(--coral)">Positive (+)</strong> → "going here makes it higher" → <em>decrease</em> the weight</p>
+          <p><strong style="color:var(--amber)">Zero (0)</strong> → "you're already at the bottom!" → <em>perfect weight, stop moving!</em></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slope sign flip demo -->
+    <div class="demo reveal">
+      <div class="demo-header">
+        <div class="demo-icon amber">🔭</div>
+        <div><div class="demo-title">Watch the slope sign flip!</div><div class="demo-desc">Drag w1 past the sweet spot — the slope changes from − to 0 to +</div></div>
+      </div>
+      <p style="font-size:0.86rem;color:var(--text-3);margin-bottom:0.9rem">The slope starts negative (w1 too small). As you increase w1, at one magic point the slope hits zero — that's the perfect w1! Go further and slope turns positive.</p>
+      <div class="slider-row">
+        <span class="slider-label" style="min-width:55px">w1</span>
+        <input type="range" id="pd_flip" min="50" max="700" step="1" value="300">
+        <span class="slider-val" id="pd_flipval">300</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin:0.75rem 0">
+        <div style="background:var(--bg-elevated);border-radius:10px;padding:0.75rem">
+          <div style="font-family:var(--font-mono);font-size:0.68rem;color:var(--text-3);text-transform:uppercase;letter-spacing:1px;margin-bottom:0.3rem">Loss right now</div>
+          <div style="font-family:var(--font-display);font-size:1.6rem;color:var(--text-1)" id="pd_fliploss">935,000</div>
+        </div>
+        <div style="background:var(--bg-elevated);border-radius:10px;padding:0.75rem">
+          <div style="font-family:var(--font-mono);font-size:0.68rem;color:var(--text-3);text-transform:uppercase;letter-spacing:1px;margin-bottom:0.3rem">Slope (∂Loss/∂w1)</div>
+          <div style="font-family:var(--font-display);font-size:1.6rem" id="pd_flipslope" style="color:var(--coral)">−16,100</div>
+        </div>
+      </div>
+      <div style="padding:0.65rem 0.9rem;border-radius:9px;font-size:0.88rem;font-weight:600;transition:all 0.3s" id="pd_flipverdict"></div>
+    </div>
+
+    <div class="takeaway reveal">
+      <div class="takeaway-label">🧠 Partial derivative in one sentence</div>
+      <p>"If I nudge just <em>this one weight</em> by a tiny amount — while holding all others still — does my total mistake (Loss) go up or down?" The sign of the answer tells you which way to move. That is the entire concept.</p>
     </div>
 
     <!-- ══ SECTION 7 ══ -->
@@ -765,6 +870,86 @@ function confetti(){
 }
 
 window.addEventListener('resize',function(){drawDeriv(+document.getElementById('dSl').value);drawLChart();});
+
+// ═══════════════════════════════════════════════════
+// PARTIAL DERIVATIVES — interactive sliders
+// ═══════════════════════════════════════════════════
+function pdLoss(w1,w2){return M.reduce(function(s,m){var e=m.s*w1+m.h*w2-m.actual;return s+e*e;},0);}
+function pdSlope(w1,w2,which){var t=0.5;return which==='w1'?(pdLoss(w1+t,w2)-pdLoss(w1-t,w2))/(2*t):(pdLoss(w1,w2+t)-pdLoss(w1,w2-t))/(2*t);}
+
+// w1-only slider (w2 frozen at 250)
+var pd_w1=document.getElementById('pd_w1');
+pd_w1.addEventListener('input',function(){
+  var w1=+this.value;
+  document.getElementById('pd_w1val').textContent=w1;
+  var l=pdLoss(w1,250), sl=pdSlope(w1,250,'w1');
+  var res=document.getElementById('pd_w1result'), ver=document.getElementById('pd_w1verdict');
+  res.textContent='Loss = '+Math.round(l).toLocaleString()+'  |  Slope = '+Math.round(sl).toLocaleString();
+  if(Math.abs(sl)<600){
+    res.style.background='rgba(52,211,153,0.1)'; res.style.color='var(--mint)';
+    ver.style.background='var(--mint-dim)'; ver.style.color='var(--mint)';
+    ver.textContent='Slope ≈ 0 → w1 is near its perfect value!';
+  } else if(sl<0){
+    res.style.background='rgba(52,211,153,0.07)'; res.style.color='var(--mint)';
+    ver.style.background='var(--mint-dim)'; ver.style.color='var(--mint)';
+    ver.textContent='Slope is negative → increase w1 to reduce Loss';
+  } else {
+    res.style.background='rgba(251,113,133,0.07)'; res.style.color='var(--coral)';
+    ver.style.background='var(--coral-dim)'; ver.style.color='var(--coral)';
+    ver.textContent='Slope is positive → decrease w1 to reduce Loss';
+  }
+});
+// init
+(function(){var e=new Event('input'); document.getElementById('pd_w1').dispatchEvent(e);})();
+
+// w2-only slider (w1 frozen at 300)
+var pd_w2=document.getElementById('pd_w2');
+pd_w2.addEventListener('input',function(){
+  var w2=+this.value;
+  document.getElementById('pd_w2val').textContent=w2;
+  var l=pdLoss(300,w2), sl=pdSlope(300,w2,'w2');
+  var res=document.getElementById('pd_w2result'), ver=document.getElementById('pd_w2verdict');
+  res.textContent='Loss = '+Math.round(l).toLocaleString()+'  |  Slope = '+Math.round(sl).toLocaleString();
+  if(Math.abs(sl)<600){
+    res.style.background='rgba(52,211,153,0.1)'; res.style.color='var(--mint)';
+    ver.style.background='var(--mint-dim)'; ver.style.color='var(--mint)';
+    ver.textContent='Slope ≈ 0 → w2 is near its perfect value!';
+  } else if(sl<0){
+    res.style.background='rgba(52,211,153,0.07)'; res.style.color='var(--mint)';
+    ver.style.background='var(--mint-dim)'; ver.style.color='var(--mint)';
+    ver.textContent='Slope is negative → increase w2 to reduce Loss';
+  } else {
+    res.style.background='rgba(251,113,133,0.07)'; res.style.color='var(--coral)';
+    ver.style.background='var(--coral-dim)'; ver.style.color='var(--coral)';
+    ver.textContent='Slope is positive → decrease w2 to reduce Loss';
+  }
+});
+(function(){var e=new Event('input'); document.getElementById('pd_w2').dispatchEvent(e);})();
+
+// slope flip demo
+var pd_flip=document.getElementById('pd_flip');
+pd_flip.addEventListener('input',function(){
+  var w1=+this.value;
+  document.getElementById('pd_flipval').textContent=w1;
+  var l=pdLoss(w1,250), sl=pdSlope(w1,250,'w1');
+  var lossEl=document.getElementById('pd_fliploss'), slopeEl=document.getElementById('pd_flipslope'), verdEl=document.getElementById('pd_flipverdict');
+  lossEl.textContent=Math.round(l).toLocaleString();
+  slopeEl.textContent=(sl>=0?'+':'')+Math.round(sl).toLocaleString();
+  if(Math.abs(sl)<600){
+    slopeEl.style.color='var(--mint)';
+    verdEl.style.background='var(--mint-dim)'; verdEl.style.color='var(--mint)';
+    verdEl.textContent='Slope = 0 — perfect! This is the best w1. Loss is at its minimum here.';
+  } else if(sl<0){
+    slopeEl.style.color='var(--mint)';
+    verdEl.style.background='var(--mint-dim)'; verdEl.style.color='var(--mint)';
+    verdEl.textContent='Negative slope — keep moving w1 RIGHT to reduce Loss further';
+  } else {
+    slopeEl.style.color='var(--coral)';
+    verdEl.style.background='var(--coral-dim)'; verdEl.style.color='var(--coral)';
+    verdEl.textContent='Positive slope — w1 went too far! Move it LEFT to reduce Loss';
+  }
+});
+(function(){var e=new Event('input'); document.getElementById('pd_flip').dispatchEvent(e);})();
 </script>
 </body>
 </html>
